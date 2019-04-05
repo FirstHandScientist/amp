@@ -6,28 +6,34 @@ from collections import defaultdict
 
 from joblib import Parallel, delayed
 from scipy.stats import multivariate_normal
-from modules import GaussianDiag, EP, MMSE, PowerEP, StochasticEP, ExpansionEP, ExpansionPowerEP
+from modules import GaussianDiag, EP, MMSE, PowerEP, StochasticEP, ExpansionEP, ExpansionPowerEP, ExpectationConsistency
 from utils import channel_component, sampling_noise, sampling_signal, sampling_H,real2complex
 
-# configuretion
+# configuration
 class hparam(object):
     num_tx = 4
     num_rx = 4
     soucrce_prior = [0.5, 0.5]
     signal_var = 1
     snr = np.linspace(1,30,60)
-    monte = 50000
+    monte = 50
     ep_iteration = 10
     power_n = 4./3
     constellation = [int(-1), int(1)]
 
+    EC_beta = 0.2
     
     #algos_list = ["MMSE", "EP", "PowerEP"]
+    # algos = {"MMSE": {"detector": MMSE},
+    #          "EP": {"detector": EP},
+    #          "ExpansionEP": {"detector": ExpansionEP},
+    #          "ExpansionPowerEP": {"detector": ExpansionPowerEP}
     algos = {"MMSE": {"detector": MMSE},
              "EP": {"detector": EP},
-             "ExpansionEP": {"detector": ExpansionEP},
-             "ExpansionPowerEP": {"detector": ExpansionPowerEP}
+             "EC": {"detector": ExpectationConsistency}
     }
+    iter_num = {"EP": 10, "EC": 40}
+    
     for _, value in algos.items():
         value["ser"] = []
 
@@ -53,9 +59,11 @@ def worker(snr):
             else:
                 detector = method['detector'](noise_var, hparam)
                 detector.fit(channel=channel,
-                          noise_var=noise_var,
-                          noised_signal=noised_signal,
-                          stop_iter=hparam.ep_iteration)
+                             noise_var=noise_var,
+                             noised_signal=noised_signal,
+                             stop_iter=hparam.iter_num[key])
+                
+                        
                 estimated_symbol = detector.detect_signal_by_mean()
 
 
@@ -71,7 +79,7 @@ def worker(snr):
         performance[key] =  np.mean(tmp[key])/hparam.num_tx 
     return performance
 
-RESULTS = Parallel(n_jobs=10, pre_dispatch="all", backend="threading")(map(delayed(worker), list(hparam.snr)))
+RESULTS = Parallel(n_jobs=1, pre_dispatch="all", verbose=11, backend="threading")(map(delayed(worker), list(hparam.snr)))
 
 performance = defaultdict(list)
 for key, _ in hparam.algos.items():
@@ -97,7 +105,7 @@ ax.legend()
 ax.set(xlabel="SNR", ylabel="SER")
 ax.grid()
 fig.savefig("figures/experiments_3-25.pdf")
-#plt.show()
+plt.show()
 
         
         

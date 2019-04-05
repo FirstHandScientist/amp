@@ -38,6 +38,7 @@ class EP(object):
         self.prox_var = np.zeros_like(self.gamma)
 
         self.constellation = hparam.constellation
+        
 
     def get_moments(self):
         return (self.mu, self.covariance)
@@ -205,7 +206,142 @@ class ExpansionPowerEP(PowerEP):
             estimated_signal.append(self.constellation[np.argmin(obj_list)])
         return estimated_signal
 
+    
+class ExpectationConsistency(object):
+    """The implementation of EC algorithm"""
+    vary_small = 1e-6
 
+    def __init__(self, noise_var, hparam):
+        self.gamma_q = np.zeros(hparam.num_tx*2)
+        self.Sigma_q =  np.ones(hparam.num_tx*2) / hparam.signal_var
+        self.gamma_r = np.zeros(hparam.num_tx*2)
+        self.Sigma_r =  np.ones(hparam.num_tx*2) / hparam.signal_var
+        self.gamma_s = np.zeros(hparam.num_tx*2)
+        self.Sigma_s =  np.ones(hparam.num_tx*2) / hparam.signal_var
+
+        self.constellation = np.array(hparam.constellation)
+        self.EC_beta = hparam.EC_beta
+        self.mu = np.zeros(hparam.num_tx*2)
+
+        self.global_iter_num = 0
+
+    def solve_for_s(self, moment1, moment2):
+        """Solve for the parameters of s given moments"""
+        inverse_Sigma_s = moment2 - np.power(moment1, 2)
+        Sigma_s = 1 / (inverse_Sigma_s + ExpectationConsistency.vary_small)
+        #assert np.all(Sigma_s>=0), "Second moment of s should be positive."
+        Sigma_s = np.clip(Sigma_s, a_min=1e-3, a_max=1e3)
+        gamma_s = Sigma_s * moment1
+        
+        try:
+            assert np.all(np.logical_not(np.isnan(gamma_s))) and np.all(np.logical_not(np.isnan(Sigma_s)))
+        except:
+            print("Invalid update encountered...")
+        
+        return gamma_s, Sigma_s
+
+    def update_moments_q(self, channel, noise_var, noised_signal):
+        """Update the 1st and 2ed moments of q"""
+        noised_signal = np.array(noised_signal)
+        g = channel.T.dot(noised_signal)/noise_var + self.gamma_q
+        S = channel.T.dot(channel)/noise_var + np.diag(self.Sigma_q)
+
+        covariance = np.linalg.inv(S)
+        
+        moment1 = covariance.dot(g)
+        #self.mu_q = moment1
+        moment2 = np.diag(covariance) + np.power( moment1, 2)
+                
+        try:
+            assert np.all(moment2>=0), "Second moment of q should be positive."
+        except:
+            print("Encounter negative moment2: {}".format(moment2))
+
+        assert np.all(np.logical_not(np.isnan(moment1))) and np.all(np.logical_not(np.isnan(moment2)))
+        return moment1, moment2
+
+    def update_moments_r(self):
+        """Update the 1st and 2ed moments of r"""
+        denominator = np.exp(self.gamma_r[:, None] * self.constellation
+                             - self.Sigma_r[:, None] * np.power(self.constellation, 2) /2 )
+        nominator1 = np.exp(self.gamma_r[:, None] * self.constellation
+                             - self.Sigma_r[:, None] * np.power(self.constellation, 2) /2 ) * self.constellation
+        
+        nominator2 = np.exp(self.gamma_r[:, None] * self.constellation
+                             - self.Sigma_r[:, None] * np.power(self.constellation, 2) /2) * np.power(self.constellation, 2)
+        try:
+            
+            moment1 = nominator1.sum(axis=1) / denominator.sum(axis=1)
+            moment2 = nominator2.sum(axis=1) / denominator.sum(axis=1)
+            assert np.all(np.logical_not(np.isnan(moment1))) and np.all(np.logical_not(np.isnan(moment2)))
+        except:
+            print("Oops!  That was no valid number.  Try again...")
+
+        
+        self.mu = moment1
+        return moment1, moment2
+
+    def get_parameter_s_from_q(self, channel, noise_var, noised_signal):
+        """Compute the parameters of s, given moments of q"""
+        moment1_q, moment2_q = self.update_moments_q(channel, noise_var, noised_signal)
+        gamma_s, Sigma_s = self.solve_for_s(moment1=moment1_q,
+                                            moment2=moment2_q)
+        self.gamma_s = gamma_s
+        self.Sigma_s = Sigma_s
+        
+    
+    def get_parameter_s_from_r(self, channel, noise_var, noised_signal):
+        """Compute the parameters of s, given moments of r"""
+        moment1_r, moment2_r = self.update_moments_r()
+
+        # clip_moment2 = np.max([np.power(moment1_r, 2) + np.power(2., - np.max([1, self.global_iter_num -4]))
+        #                        , moment2_r])
+        clip_moment2 = moment2_r
+
+        gamma_s, Sigma_s = self.solve_for_s(moment1=moment1_r,
+                                            moment2=clip_moment2)
+        self.gamma_s = gamma_s
+        self.Sigma_s = Sigma_s
+        
+
+    def update_r(self):
+        """Update the parameters of distribution r"""
+        self.gamma_r = self.gamma_s - self.gamma_q
+        self.Sigma_r = self.Sigma_s - self.Sigma_q
+        
+
+    def update_q(self):
+        """Update the parameters of distribution q"""
+        beta = self.EC_beta
+        self.gamma_q = (self.gamma_s - self.gamma_r) * beta + (1 - beta) * self.gamma_q
+        self.Sigma_q = (self.Sigma_s - self.Sigma_r) * beta + (1 - beta) * self.Sigma_q
+        try:
+            assert np.all(np.logical_not(np.isnan(self.gamma_q)))
+        except:
+            print("Invalid update encountered...")
+        
+    def fit(self, channel, noise_var, noised_signal, stop_iter=10):
+        """Do the training by number of iteration of stop_iter"""
+        for i in range(stop_iter):
+            self.global_iter_num = i
+            
+            self.get_parameter_s_from_q(channel, noise_var, noised_signal)
+            self.update_r()
+            self.get_parameter_s_from_r(channel, noise_var, noised_signal)
+            self.update_q()
+
+    def detect_signal_by_mean(self):
+        
+        # diff_abs = np.abs(self.mu_q[:, None] - self.constellation)
+        # estimated_idx = np.argmin(diff_abs, axis=1)
+        estimated_signal = []
+        for mu in self.mu:
+            obj_list  = np.abs(mu - np.array(self.constellation))
+            estimated_signal.append(self.constellation[np.argmin(obj_list)])
+        return estimated_signal
+
+
+            
 class MMSE(object):
     def __init__(self):
         pass
