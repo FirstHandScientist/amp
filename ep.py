@@ -6,7 +6,7 @@ from collections import defaultdict
 
 from joblib import Parallel, delayed
 from scipy.stats import multivariate_normal
-from modules import GaussianDiag, EP, MMSE, PowerEP, StochasticEP, ExpansionEP, ExpansionPowerEP, ExpectationConsistency
+from modules import GaussianDiag, EP, MMSE, PowerEP, StochasticEP, ExpansionEP, ExpansionPowerEP, ExpectationConsistency, LoopyBP
 from utils import channel_component, sampling_noise, sampling_signal, sampling_H,real2complex
 
 # configuration
@@ -15,9 +15,8 @@ class hparam(object):
     num_rx = 4
     soucrce_prior = [0.5, 0.5]
     signal_var = 1
-    snr = np.linspace(1,30,60)
-    monte = 50
-    ep_iteration = 10
+    snr = np.linspace(1,15,30)
+    monte = 8
     power_n = 4./3
     constellation = [int(-1), int(1)]
 
@@ -29,10 +28,11 @@ class hparam(object):
     #          "ExpansionEP": {"detector": ExpansionEP},
     #          "ExpansionPowerEP": {"detector": ExpansionPowerEP}
     algos = {"MMSE": {"detector": MMSE},
-             "EP": {"detector": EP},
-             "EC": {"detector": ExpectationConsistency}
+             "LoopyBP": {"detector": LoopyBP}
     }
-    iter_num = {"EP": 10, "EC": 40}
+    iter_num = {"EP": 10,
+                "EC": 50,
+                "LoopyBP":10}
     
     for _, value in algos.items():
         value["ser"] = []
@@ -97,7 +97,7 @@ iter_marker_list = iter(marker_list)
 fig, ax = plt.subplots()
 for key, method in hparam.algos.items():
     ax.semilogy(hparam.snr, performance[key],
-                label = key + "_Iteration:{}".format(hparam.ep_iteration) if "MMSE" not in key else "MMSE",
+                label = key + "_Iteration:{}".format(hparam.iter_num[key]) if "MMSE" not in key else "MMSE",
                 marker=next(iter_marker_list))
     
 

@@ -1,5 +1,6 @@
 import numpy as np
 import itertools
+import factorgraph as fg
 from scipy.stats import multivariate_normal
 
 
@@ -294,9 +295,9 @@ class ExpectationConsistency(object):
         """Compute the parameters of s, given moments of r"""
         moment1_r, moment2_r = self.update_moments_r()
 
-        # clip_moment2 = np.max([np.power(moment1_r, 2) + np.power(2., - np.max([1, self.global_iter_num -4]))
-        #                        , moment2_r])
-        clip_moment2 = moment2_r
+        clip_moment2 = np.max([np.power(moment1_r, 2) + np.power(2., - np.max([1, self.global_iter_num -4]))
+                               , moment2_r])
+        #clip_moment2 = moment2_r
 
         gamma_s, Sigma_s = self.solve_for_s(moment1=moment1_r,
                                             moment2=clip_moment2)
@@ -351,3 +352,54 @@ class MMSE(object):
         x = inv.dot(channel.T).dot(y)
         return np.sign(x)
 
+class LoopyBP(object):
+
+    def __init__(self, noise_var, hparam):
+        # get the constellation
+        self.constellation = hparam.constellation
+        # set the graph
+        self.graph = fg.Graph()
+        # add the discrete random variables to graph
+        self.n_symbol = hparam.num_tx * 2
+        for idx in range(hparam.num_tx * 2):
+            self.graph.rv("x{}".format(idx), len(self.constellation))
+
+    def set_potential(self, h_matrix, observation, noise_var):
+        s = np.matmul(h_matrix.T, h_matrix)
+        for var_idx in range(h_matrix.shape[1]):
+            # set the first type of potentials, the standalone potentials
+            f_x_i = np.exp( (-0.5 *s[var_idx, var_idx] * np.power(self.constellation, 2)
+                             + h_matrix[:, var_idx].dot(observation) * np.array(self.constellation))/noise_var)
+            self.graph.factor(["x{}".format(var_idx)],
+                              potential=f_x_i)
+
+
+        for var_idx in range(h_matrix.shape[1]):
+
+            for var_jdx in range(var_idx + 1, h_matrix.shape[1]):
+                # set the cross potentials
+                t_ij = np.exp(- np.array(self.constellation)[None,:].T
+                              * s[var_idx, var_jdx] * np.array(self.constellation) / noise_var)
+                self.graph.factor(["x{}".format(var_jdx), "x{}".format(var_idx)],
+                                  potential=t_ij)
+        
+
+    
+    def fit(self, channel, noise_var, noised_signal, stop_iter=10):
+        """ set potentials and run message passing"""
+        self.set_potential(h_matrix=channel,
+                           observation=noised_signal,
+                           noise_var=noise_var)
+
+        # run BP
+        iters, converged = self.graph.lbp(normalize=True)
+        
+        
+    def detect_signal_by_mean(self):
+        estimated_signal = []
+        rv_marginals = dict(self.graph.rv_marginals())
+        for idx in range(self.n_symbol):
+            x_marginal = rv_marginals["x{}".format(idx)]
+            
+            estimated_signal.append(self.constellation[x_marginal.argmax()])
+        return estimated_signal
