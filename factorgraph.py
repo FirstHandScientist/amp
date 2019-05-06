@@ -472,7 +472,7 @@ class Graph(object):
             if normalize:
                 marg /= sum(marg)
 
-            tuples += [(rv, marg)]
+            tuples += [(rv.name, marg)]
         return tuples
 
     def print_rv_marginals(self, rvs=None, normalize=False):

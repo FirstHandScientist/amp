@@ -1,6 +1,7 @@
 import numpy as np
 import itertools
 import factorgraph as fg
+import maxsum
 from scipy.stats import multivariate_normal
 
 
@@ -357,6 +358,7 @@ class LoopyBP(object):
     def __init__(self, noise_var, hparam):
         # get the constellation
         self.constellation = hparam.constellation
+        self.hparam = hparam
         # set the graph
         self.graph = fg.Graph()
         # add the discrete random variables to graph
@@ -403,3 +405,66 @@ class LoopyBP(object):
             
             estimated_signal.append(self.constellation[x_marginal.argmax()])
         return estimated_signal
+
+class PPBP(LoopyBP):
+
+    def set_potential(self, h_matrix, observation, noise_var):
+        power_ratio = noise_var/self.hparam.signal_var
+        s = np.matmul(h_matrix.T, h_matrix)
+        inv = np.linalg.inv(power_ratio * np.eye(h_matrix.shape[1]) 
+                            + s )
+        prior_u = inv.dot(h_matrix.T).dot(observation)
+                        
+        for var_idx in range(h_matrix.shape[1]):
+            # set the first type of potentials, the standalone potentials
+            f_x_i = np.exp( (-0.5 *s[var_idx, var_idx] * np.power(self.constellation, 2)
+                             + h_matrix[:, var_idx].dot(observation) * np.array(self.constellation))/noise_var)
+            prior_i = np.exp(-0.5 * np.power(self.constellation - prior_u[var_idx], 2) \
+                             / (inv[var_idx, var_idx] * noise_var))
+            self.graph.factor(["x{}".format(var_idx)],
+                              potential=f_x_i * prior_i / noise_var)
+
+
+        for var_idx in range(h_matrix.shape[1]):
+
+            for var_jdx in range(var_idx + 1, h_matrix.shape[1]):
+                # set the cross potentials
+                t_ij = np.exp(- np.array(self.constellation)[None,:].T
+                              * s[var_idx, var_jdx] * np.array(self.constellation) / noise_var)
+                self.graph.factor(["x{}".format(var_jdx), "x{}".format(var_idx)],
+                                  potential=t_ij)
+    
+
+class LoopyMP(LoopyBP):
+    def __init__(self, noise_var, hparam):
+        # get the constellation
+        self.constellation = hparam.constellation
+
+        self.n_symbol = hparam.num_tx * 2
+        # set the graph
+        self.graph = maxsum.mpGraph()
+        # add the discrete random variables to graph
+        for idx in range(hparam.num_tx * 2):
+            self.graph.rv("x{}".format(idx), len(self.constellation))
+
+    
+    def set_potential(self, h_matrix, observation, noise_var):
+        s = np.matmul(h_matrix.T, h_matrix)
+        for var_idx in range(h_matrix.shape[1]):
+            # set the first type of potentials, the standalone potentials
+            f_x_i = (-0.5 *s[var_idx, var_idx] * np.power(self.constellation, 2) \
+                     + h_matrix[:, var_idx].dot(observation) \
+                     * np.array(self.constellation))/noise_var
+            self.graph.factor(["x{}".format(var_idx)],
+                              potential=f_x_i)
+
+
+        for var_idx in range(h_matrix.shape[1]):
+
+            for var_jdx in range(var_idx + 1, h_matrix.shape[1]):
+                # set the cross potentials
+                t_ij = - np.array(self.constellation)[None,:].T \
+                       * s[var_idx, var_jdx] * np.array(self.constellation) / noise_var
+                self.graph.factor(["x{}".format(var_jdx), "x{}".format(var_idx)],
+                                  potential=t_ij)
+    
