@@ -1,4 +1,6 @@
 import numpy as np
+import multiprocessing as mp
+from multiprocessing import Pool
 import matplotlib
 import matplotlib.pyplot as plt
 import itertools
@@ -9,6 +11,8 @@ from scipy.stats import multivariate_normal
 from modules import GaussianDiag, EP, MMSE, PowerEP, StochasticEP, ExpansionEP, ExpansionPowerEP, ExpectationConsistency, LoopyBP, LoopyMP, PPBP, AlphaBP, MMSEalphaBP, ML
 from utils import channel_component, sampling_noise, sampling_signal, sampling_H,real2complex
 
+
+
 # configuration
 class hparam(object):
     num_tx = 4
@@ -16,12 +20,12 @@ class hparam(object):
     soucrce_prior = [0.5, 0.5]
     signal_var = 1
     snr = np.linspace(1,15,15)
-    monte = 200
+    monte = 20
     power_n = 4./3
     constellation = [int(-1), int(1)]
 
     EC_beta = 0.2
-    alpha = 0.8
+    alpha = 0.7
     #algos_list = ["MMSE", "EP", "PowerEP"]
     # algos = {"MMSE": {"detector": MMSE},
     #          "EP": {"detector": EP},
@@ -46,7 +50,7 @@ class hparam(object):
     for _, value in algos.items():
         value["ser"] = []
 
-def worker(snr):
+def task(snr):
 
     tmp = dict()
     for name,_ in hparam.algos.items():
@@ -88,12 +92,32 @@ def worker(snr):
         performance[key] =  np.mean(tmp[key])/hparam.num_tx 
     return performance
 
-RESULTS = Parallel(n_jobs=1, pre_dispatch="all", verbose=11, backend="threading")(map(delayed(worker), list(hparam.snr)))
+results = []
+def collect_result(result):
+    global results
+    results.append(result)
+
+pool = mp.Pool(mp.cpu_count())
+
+# RESULTS = Parallel(n_jobs=1, pre_dispatch="all", verbose=11, backend="threading")(map(delayed(worker), list(hparam.snr)))
+# for snr in list(hparam.snr):
+#     pool.apply_async(task, args=(snr), callback=collect_result)
+results = pool.map(task, list(hparam.snr))
+
+
+#results = [r for r in result_objects]
+
+pool.close()
+
 
 performance = defaultdict(list)
-for key, _ in hparam.algos.items():
-    for the_result in RESULTS:
-        performance[key].append( the_result[key] )
+
+#for the_result in RESULTS:
+for snr in list(hparam.snr):
+    for the_result in results:
+        if the_result["snr"] == snr:
+            for key, _ in hparam.algos.items():                
+                performance[key].append( the_result[key] )
 
     
     
@@ -115,7 +139,7 @@ ax.legend()
 ax.set(xlabel="SNR", ylabel="SER")
 ax.grid()
 fig.savefig("figures/experiments_5-7.pdf")
-#plt.show()
+plt.show()
 
         
         
