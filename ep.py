@@ -6,7 +6,7 @@ from collections import defaultdict
 
 from joblib import Parallel, delayed
 from scipy.stats import multivariate_normal
-from modules import GaussianDiag, EP, MMSE, PowerEP, StochasticEP, ExpansionEP, ExpansionPowerEP, ExpectationConsistency, LoopyBP, LoopyMP, PPBP
+from modules import GaussianDiag, EP, MMSE, PowerEP, StochasticEP, ExpansionEP, ExpansionPowerEP, ExpectationConsistency, LoopyBP, LoopyMP, PPBP, AlphaBP, MMSEalphaBP, ML
 from utils import channel_component, sampling_noise, sampling_signal, sampling_H,real2complex
 
 # configuration
@@ -21,22 +21,27 @@ class hparam(object):
     constellation = [int(-1), int(1)]
 
     EC_beta = 0.2
-    
+    alpha = 0.8
     #algos_list = ["MMSE", "EP", "PowerEP"]
     # algos = {"MMSE": {"detector": MMSE},
     #          "EP": {"detector": EP},
     #          "ExpansionEP": {"detector": ExpansionEP},
     #          "ExpansionPowerEP": {"detector": ExpansionPowerEP}
     algos = {"MMSE": {"detector": MMSE},
+             "ML": {"detector": ML},
              "LoopyBP": {"detector": LoopyBP},
-             # "LoopyMP": {"detector": LoopyMP},
+             #"LoopyMP": {"detector": LoopyMP},
+             "AlphaBP": {"detector": AlphaBP},
+             "MMSEalphaBP": {"detector": MMSEalphaBP},
              "PPBP": {"detector": PPBP}
     }
     iter_num = {"EP": 10,
                 "EC": 50,
-                "LoopyBP": 10,
-                "PPBP": 10,
-                "LoopyMP": 10}
+                "LoopyBP": 50,
+                "PPBP": 50,
+                "AlphaBP": 50,
+                "MMSEalphaBP": 50,
+                "LoopyMP": 50}
     
     for _, value in algos.items():
         value["ser"] = []
@@ -54,9 +59,9 @@ def worker(snr):
         channel = sampling_H(hparam)
         noised_signal = np.dot(channel,x) + noise
         for key, method in hparam.algos.items():
-            if key is "MMSE":
+            if key is "MMSE" or key is "ML":
                 #### mes detection
-                detector = method["detector"]()
+                detector = method["detector"](hparam)
                 power_ratio = noise_var/hparam.signal_var
                 estimated_symbol = detector.detect(y=noised_signal, channel=channel, power_ratio=power_ratio)
                 #estimated_symbol = real2complex(np.sign(detected_by_mmse))
@@ -96,7 +101,7 @@ for key, _ in hparam.algos.items():
 # for snr in hparam.snr:
 
 
-marker_list = ["o", "<", "+", ">"]
+marker_list = ["o", "<", "+", ">", "v", "1", "2", "3", "8"]
 iter_marker_list = iter(marker_list)
 fig, ax = plt.subplots()
 for key, method in hparam.algos.items():
@@ -109,8 +114,8 @@ for key, method in hparam.algos.items():
 ax.legend()
 ax.set(xlabel="SNR", ylabel="SER")
 ax.grid()
-fig.savefig("figures/experiments_3-25.pdf")
-plt.show()
+fig.savefig("figures/experiments_5-7.pdf")
+#plt.show()
 
         
         
