@@ -17,7 +17,9 @@ def sampling_H(hparam):
     return np.concatenate((real_img, img_real), axis=0)
 
 def sampling_noise(hparam, snr):
-    noise_var = hparam.num_tx/hparam.num_rx * np.power(10, -snr/10)
+    #noise_var = hparam.num_tx/hparam.num_rx * np.power(10, -snr/10)
+    noise_var = hparam.signal_var / snr
+
     #noise_var = hparam.num_tx * np.power(10, -snr/10)
 
     noise = np.sqrt( noise_var) * np.random.randn(hparam.num_rx * 2)

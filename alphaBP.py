@@ -85,6 +85,8 @@ class Factor(bpFactor):
         belief = np.power(self._potential.copy(), self._alpha)
         for i, rv in enumerate(self._rvs):
             m = rv.get_outgoing_for(self)
+            fm = self.get_outgoing_for(rv)
+
             if self.debug:
                 assert m.shape == (rv.n_opts,)
             # Reshape into the correct axis (for combining). For example, if
@@ -100,9 +102,10 @@ class Factor(bpFactor):
             proj = np.ones(len(belief.shape), int)
             proj[i] = -1
             m_proj = m.reshape(proj)
-            incoming += [m_proj]
+            fm_proj = np.power(fm.reshape(proj), 1 - self._alpha)
+            incoming += [m_proj * fm_proj]
             # Combine to save as we go
-            belief *= m_proj
+            belief *= m_proj * fm_proj
 
         # Divide out individual belief and (Sum:) add for marginal.
         convg = True
@@ -112,8 +115,7 @@ class Factor(bpFactor):
 
             fm = self.get_outgoing_for(rv)
             
-            rv_belief = divide_safezero(belief, incoming[i])\
-                        * np.power(fm, 1 - self._alpha)
+            rv_belief = divide_safezero(belief, incoming[i])
             
             axes = tuple(all_idx[:i] + all_idx[i+1:])
             o = rv_belief.sum(axis=axes) * np.power(fm, 1 - self._alpha)
