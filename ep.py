@@ -3,6 +3,8 @@ import multiprocessing as mp
 from tqdm import tqdm
 from multiprocessing import Pool
 import matplotlib
+matplotlib.rcParams.update({'font.size': 18})
+
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import itertools
@@ -10,7 +12,7 @@ from collections import defaultdict
 
 from joblib import Parallel, delayed
 from scipy.stats import multivariate_normal
-from modules import GaussianDiag, EP, MMSE, PowerEP, StochasticEP, ExpansionEP, ExpansionPowerEP, ExpectationConsistency, LoopyBP, LoopyMP, PPBP, AlphaBP, MMSEalphaBP, ML, VariationalBP, MMSEvarBP, EPalphaBP
+from modules import GaussianDiag, EP, MMSE, PowerEP, StochasticEP, ExpansionEP, ExpansionPowerEP, ExpectationConsistency, LoopyBP, LoopyMP, PPBP, AlphaBP, MMSEalphaBP, ML, VariationalBP, MMSEvarBP, EPalphaBP, StochasticBP
 from utils import channel_component, sampling_noise, sampling_signal, sampling_H,real2complex
 
 
@@ -23,8 +25,8 @@ class hparam(object):
     num_rx = 4
     soucrce_prior = [0.5, 0.5]
     signal_var = 1
-    snr = np.linspace(1,50, 10)
-    monte = 2000
+    snr = np.linspace(1,40, 10)
+    monte = 50
     # power_n = 4./3
     constellation = [int(-1), int(1)]
 
@@ -49,18 +51,20 @@ class hparam(object):
     #          "PPBP": {"detector": PPBP}
     # }
 
-    algos = {"MMSE": {"detector": MMSE},
-             "ML": {"detector": ML},
-             "AlphaBP": {"detector": AlphaBP},
-             "MMSEalphaBP": {"detector": MMSEalphaBP},
-             "EP": {"detector": EP},
-             "EPalphaBP": {"detector": EPalphaBP},
-             "PPBP": {"detector": PPBP}
+    algos = {"MMSE": {"detector": MMSE, "legend": "MMSE"},
+             "ML": {"detector": ML, "legend": "MAP"},
+             "AlphaBP": {"detector": AlphaBP, "legend": r'$\alpha$-BP,'+' {}'.format(alpha)},
+             "MMSEalphaBP": {"detector": MMSEalphaBP, "legend":r'$\alpha$-BP+MMSE,'+' {}'.format(alpha)},
+             "StochasticBP": {"detector": StochasticBP, "legend":"SBP,"+' {}'.format(alpha)},
+             # "EP": {"detector": EP, "legend": "EP"},
+             # "EPalphaBP": {"detector": EPalphaBP, "legend": r'$\alpha$-BP+EP,'+' {}'.format(alpha)}
+             # "PPBP": {"detector": PPBP}
 
-    }
+             }
     
     iter_num = {"EP": 10,
                 "EC": 50,
+                "StochasticBP":100,
                 "LoopyBP": 50,
                 "PPBP": 50,
                 "AlphaBP": 50,
@@ -132,7 +136,7 @@ pool = mp.Pool(mp.cpu_count())
 # RESULTS = Parallel(n_jobs=1, pre_dispatch="all", verbose=11, backend="threading")(map(delayed(worker), list(hparam.snr)))
 # for snr in list(hparam.snr):
 #     pool.apply_async(task, args=(snr), callback=collect_result)
-#task(hparam.snr[1])
+# task(hparam.snr[1])
 results = pool.map(task, list(hparam.snr))
 
 
@@ -162,11 +166,11 @@ fig, ax = plt.subplots()
 for key, method in hparam.algos.items():
     ax.semilogy(hparam.snr, performance[key],
                 # label = key + "_Iteration:{}".format(hparam.iter_num[key]) if "MMSE" not in key else "MMSE",
-                label = key,
+                label = method['legend'],
                 marker=next(iter_marker_list))
     
+ax.legend(loc="best", fontsize='small', ncol=2)
 
-ax.legend(loc="best")
 ax.set(xlabel="ration of signal to noise variance", ylabel="SER")
 ax.grid()
 fig.savefig("figures/experiments_alpha{}_sum.pdf".format(int(hparam.alpha/0.1)))

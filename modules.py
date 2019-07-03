@@ -1,6 +1,7 @@
 import numpy as np
 import itertools
 import factorgraph as fg
+import scipy.sparse.csgraph as csgraph
 import maxsum
 import alphaBP
 import variationalBP
@@ -14,7 +15,7 @@ class GaussianDiag:
     @staticmethod
     def likelihood(mean, logs, x):
         """
-        lnL = -1/2 * { ln|Var| + ((X - Mu)^T)(Var^-1)(X - Mu) + kln(2*PI) }
+        lnL = -1/2 * { ln|Var| + ((X -n Mu)^T)(Var^-1)(X - Mu) + kln(2*PI) }
               k = 1 (Independent)
               Var = logs ** 2
         """
@@ -430,6 +431,104 @@ class LoopyBP(object):
             
             estimated_signal.append(self.constellation[x_marginal.argmax()])
         return estimated_signal
+    
+class AlphaBP(LoopyBP):
+    def __init__(self, noise_var, hparam):
+        self.hparam = hparam
+        # get the constellation
+        self.constellation = hparam.constellation
+
+        self.n_symbol = hparam.num_tx * 2
+        # set the graph
+        self.graph = alphaBP.alphaGraph(alpha=hparam.alpha)
+        # add the discrete random variables to graph
+        for idx in range(hparam.num_tx * 2):
+            self.graph.rv("x{}".format(idx), len(self.constellation))
+
+
+class StochasticBP(AlphaBP):
+    def __init__(self, noise_var, hparam):
+        self.hparam = hparam
+        # get the constellation
+        self.constellation = hparam.constellation
+        self.alpha = hparam.alpha
+        self.n_symbol = hparam.num_tx * 2
+        # set the graph
+        self.learning_rate = 1
+        self.first_iter_flag = True
+
+
+    def subgraph_mask(self, size):
+        """give the mask for spanning tree subgraph"""
+        init_matrix = np.random.randn(size,size)
+        Tcs = csgraph.minimum_spanning_tree(init_matrix)
+        mask_matrix = Tcs.toarray()
+        return mask_matrix
+
+    def new_graph(self, h_matrix, observation, noise_var):
+        # initialize new graph
+        subgraph = alphaBP.alphaGraph(alpha=self.alpha)
+        # add the discrete random variables to graph
+        for idx in range(h_matrix.shape[1]):
+            subgraph.rv("x{}".format(idx), len(self.constellation))
+
+        s = np.matmul(h_matrix.T, h_matrix)
+
+        # get the prior belief
+        if not self.first_iter_flag:
+            rv_marginals = dict(self.graph.rv_marginals())
+
+        for var_idx in range(h_matrix.shape[1]):
+            # set the first type of potentials, the standalone potentials
+            f_x_i = np.exp( (-0.5 *s[var_idx, var_idx] * np.power(self.constellation, 2)
+                             + h_matrix[:, var_idx].dot(observation) * np.array(self.constellation))/noise_var)
+            f_x_i = f_x_i/f_x_i.sum()
+            if not self.first_iter_flag:
+                old_prior = rv_marginals["x{}".format(var_idx)]
+                subgraph.factor(["x{}".format(var_idx)],
+                                potential=np.power(f_x_i, self.learning_rate) * old_prior)
+            else:
+                subgraph.factor(["x{}".format(var_idx)],
+                                potential=f_x_i)
+        ## sampling the subgraph mask first and set cross potentials
+        graph_mask = self.subgraph_mask(h_matrix.shape[1])
+        
+        for var_idx in range(h_matrix.shape[1]):
+            
+            for var_jdx in range(var_idx + 1, h_matrix.shape[1]):
+                # set the cross potentials
+                test_condition = np.isclose(np.array([graph_mask[var_idx, var_jdx],
+                                                      graph_mask[var_jdx, var_idx]]),
+                                            np.array([0,0]))
+                
+                if not np.all(test_condition):
+                    t_ij = np.exp(- np.array(self.constellation)[None,:].T
+                                  * s[var_idx, var_jdx] * np.array(self.constellation) / noise_var)
+                    t_ij = t_ij/t_ij.sum()
+                    subgraph.factor(["x{}".format(var_jdx), "x{}".format(var_idx)],
+                                    potential= np.power(t_ij, self.learning_rate))
+        return subgraph
+        
+
+    
+    def fit(self, channel, noise_var, noised_signal, stop_iter=10):
+        rate_list = np.linspace(1, 0.01, stop_iter)
+        for iti in range(stop_iter):
+            # initialize a new graph
+            self.learning_rate = rate_list[iti]
+            """ set potentials and run message passing"""
+            self.graph = self.new_graph(h_matrix=channel,
+                                        observation=noised_signal,
+                                        noise_var=noise_var)
+
+            # run BP
+            iters, converged = self.graph.lbp(normalize=True,
+                                              max_iters=50)
+
+            self.first_iter_flag = False
+
+
+    
 
 class PPBP(LoopyBP):
 
@@ -493,18 +592,6 @@ class LoopyMP(LoopyBP):
                 self.graph.factor(["x{}".format(var_jdx), "x{}".format(var_idx)],
                                   potential=t_ij)
     
-class AlphaBP(LoopyBP):
-    def __init__(self, noise_var, hparam):
-        self.hparam = hparam
-        # get the constellation
-        self.constellation = hparam.constellation
-
-        self.n_symbol = hparam.num_tx * 2
-        # set the graph
-        self.graph = alphaBP.alphaGraph(alpha=hparam.alpha)
-        # add the discrete random variables to graph
-        for idx in range(hparam.num_tx * 2):
-            self.graph.rv("x{}".format(idx), len(self.constellation))
 
 class VariationalBP(LoopyBP):
     def __init__(self, noise_var, hparam):
@@ -586,7 +673,7 @@ class EPalphaBP(AlphaBP):
         self.prior.fit(channel=channel,
                        noise_var=noise_var,
                        noised_signal=noised_signal,
-                       stop_iter=stop_iter)
+                       stop_iter=10)
                
         self.set_potential(h_matrix=channel,
                            observation=noised_signal,

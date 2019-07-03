@@ -16,12 +16,30 @@ def sampling_H(hparam):
     img_real = np.concatenate((img, real), axis=1)
     return np.concatenate((real_img, img_real), axis=0)
 
+def ERsampling_S(hparam, p):
+    S = np.zeros((hparam.num_tx, hparam.num_rx))
+    b = np.random.randn(hparam.num_tx)* hparam.stn_var / 4
+    
+    for i in range(hparam.num_tx):
+        
+        for j in range(i, hparam.num_rx):
+            trial = np.random.random()
+            if trial <= p:
+                S[i, j] = np.random.randn() * hparam.stn_var
+                S[j, i] = S[i, j]
+        
+        S[i, i] = np.abs(np.random.randn())
+        row_max = S[i].max()
+        if S[i, i]< row_max:
+            S[i, i] = row_max
+    
+    return (S, b)
+
+
 def sampling_noise(hparam, snr):
-    #noise_var = hparam.num_tx/hparam.num_rx * np.power(10, -snr/10)
-    noise_var = hparam.signal_var / snr
-
-    #noise_var = hparam.num_tx * np.power(10, -snr/10)
-
+    # noise_var = hparam.num_tx/hparam.num_rx * np.power(10, -snr/10)
+    # noise_var = hparam.num_tx * np.power(10, -snr/10)
+    noise_var = 1. / snr
     noise = np.sqrt( noise_var) * np.random.randn(hparam.num_rx * 2)
     return (noise, noise_var)
 
