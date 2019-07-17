@@ -133,7 +133,7 @@ class EP(object):
 class PowerEP(EP):
     
     def __init__(self, noise_var, hparam, power_n=1):
-        super().__init__(noise_var, hparam)
+        super(PowerEP, self).__init__(noise_var, hparam)
         #### set the power n for PowerEP, integer
         self.power_n = hparam.power_n
         #assert self.power_n > 0
@@ -159,8 +159,6 @@ class PowerEP(EP):
 
 ### definition of stochastic EP:
 class StochasticEP(EP):
-    def __init__(self, noise_var, hparam):
-        super().__init__(noise_var, hparam)
 
     def kl_match_momoents(self):
         """Moment matching step"""
@@ -175,15 +173,15 @@ class StochasticEP(EP):
             total_n = self.Sigma.size
             self.Sigma = ( self.Sigma[0] * (1 - n / total_n) +  np.sum(Sigma[positive_idx]) * ( 1 / total_n) ) * np.ones_like(self.Sigma)
             self.gamma = (self.gamma[0] * ( 1 - n / total_n) +  np.sum(gamma[positive_idx]) * ( 1 / total_n) ) * np.ones_like(self.gamma)
-            assert np.all(self.Sigma>0)
+            assert np.all(self.Sigma>=0)
     
 
 class ExpansionEP(EP):
     """Do the improvement of EP, using the basic expansion: the p(x) is appx as 
     \sum_n q_n(x) - (N-1) p(x), q_n is the n-th title distribution"""
     
-    def __init__(self, noise_var, hparam):
-        super().__init__(noise_var, hparam)
+    # def __init__(self, noise_var, hparam):
+    #     super().__init__(noise_var, hparam)
         
     def detect_signal_by_mean(self):
         """1st order correction"""
@@ -235,7 +233,7 @@ class ExpectationConsistency(object):
         inverse_Sigma_s = moment2 - np.power(moment1, 2)
         Sigma_s = 1 / (inverse_Sigma_s + ExpectationConsistency.vary_small)
         #assert np.all(Sigma_s>=0), "Second moment of s should be positive."
-        Sigma_s = np.clip(Sigma_s, a_min=1e-3, a_max=1e3)
+        Sigma_s = np.clip(Sigma_s, a_min=1e-3, a_max=1e2)
         gamma_s = Sigma_s * moment1
         
         try:
@@ -349,12 +347,15 @@ class ExpectationConsistency(object):
             
 class MMSE(object):
     def __init__(self, hparam):
-        pass
+        self.constellation = hparam.constellation
+        
     def detect(self, y, channel, power_ratio):
         inv = np.linalg.inv(power_ratio * np.eye(channel.shape[1]) 
                             + np.matmul(channel.T, channel) )
         x = inv.dot(channel.T).dot(y)
-        return np.sign(x)
+        
+        estimated_x = [self.constellation[np.argmin(np.abs(x_i - np.array(self.constellation)))] for x_i in x]
+        return np.array(estimated_x)
 
 
 class ML(object):
@@ -480,8 +481,10 @@ class StochasticBP(AlphaBP):
 
         for var_idx in range(h_matrix.shape[1]):
             # set the first type of potentials, the standalone potentials
-            f_x_i = np.exp( (-0.5 *s[var_idx, var_idx] * np.power(self.constellation, 2)
-                             + h_matrix[:, var_idx].dot(observation) * np.array(self.constellation))/noise_var)
+            f_potential = (-0.5 *s[var_idx, var_idx] * np.power(self.constellation, 2)
+                             + h_matrix[:, var_idx].dot(observation) * np.array(self.constellation))/noise_var
+            f_potential = f_potential - f_potential.max()
+            f_x_i = np.exp( f_potential)
             f_x_i = f_x_i/f_x_i.sum()
             if not self.first_iter_flag:
                 old_prior = rv_marginals["x{}".format(var_idx)]
@@ -617,10 +620,15 @@ class MMSEalphaBP(AlphaBP):
                         
         for var_idx in range(h_matrix.shape[1]):
             # set the first type of potentials, the standalone potentials
-            f_x_i = np.exp( (-0.5 *s[var_idx, var_idx] * np.power(self.constellation, 2)
-                             + h_matrix[:, var_idx].dot(observation) * np.array(self.constellation))/noise_var)
-            prior_i = np.exp(-0.5 * np.power(self.constellation - prior_u[var_idx], 2) \
-                             / (inv[var_idx, var_idx] * noise_var) )
+            f_potential = (-0.5 *s[var_idx, var_idx] * np.power(self.constellation, 2)
+                             + h_matrix[:, var_idx].dot(observation) * np.array(self.constellation))/noise_var
+            f_potential = f_potential - f_potential.max()
+            f_x_i = np.exp( f_potential )
+            
+            p_potential = -0.5 * np.power(self.constellation - prior_u[var_idx], 2) \
+                             / (inv[var_idx, var_idx] * noise_var) 
+            p_potential = p_potential - p_potential.max()
+            prior_i = np.exp(p_potential)
             self.graph.factor(["x{}".format(var_idx)],
                               potential=f_x_i * prior_i)
 
@@ -629,8 +637,9 @@ class MMSEalphaBP(AlphaBP):
 
             for var_jdx in range(var_idx + 1, h_matrix.shape[1]):
                 # set the cross potentials
-                t_ij = np.exp(- np.array(self.constellation)[None,:].T
-                              * s[var_idx, var_jdx] * np.array(self.constellation) / noise_var)
+                t_potential = - np.array(self.constellation)[None,:].T * s[var_idx, var_jdx] * np.array(self.constellation) / noise_var
+                t_potential = t_potential - t_potential.max()
+                t_ij = np.exp(t_potential)
                 self.graph.factor(["x{}".format(var_jdx), "x{}".format(var_idx)],
                                   potential=t_ij)
 
@@ -649,10 +658,17 @@ class EPalphaBP(AlphaBP):
                         
         for var_idx in range(h_matrix.shape[1]):
             # set the first type of potentials, the standalone potentials
-            f_x_i = np.exp( (-0.5 *s[var_idx, var_idx] * np.power(self.constellation, 2)
-                             + h_matrix[:, var_idx].dot(observation) * np.array(self.constellation))/noise_var)
-            prior_i = np.exp(-0.5 * np.power(self.constellation - prior_u[var_idx], 2) \
-                             / (prior_var[var_idx, var_idx]) )
+            f_potential = (-0.5 *s[var_idx, var_idx] * np.power(self.constellation, 2)
+                             + h_matrix[:, var_idx].dot(observation) * np.array(self.constellation))/noise_var
+            # in case numerial overflow
+            f_potential = f_potential - f_potential.max()
+            f_x_i = np.exp( f_potential )
+
+            p_potential = -0.5 * np.power(self.constellation - prior_u[var_idx], 2) \
+                             / (prior_var[var_idx, var_idx])
+            p_potential = p_potential - p_potential.max()
+
+            prior_i = np.exp(p_potential)
             self.graph.factor(["x{}".format(var_idx)],
                               potential=f_x_i * prior_i)
 
@@ -661,8 +677,9 @@ class EPalphaBP(AlphaBP):
 
             for var_jdx in range(var_idx + 1, h_matrix.shape[1]):
                 # set the cross potentials
-                t_ij = np.exp(- np.array(self.constellation)[None,:].T
-                              * s[var_idx, var_jdx] * np.array(self.constellation) / noise_var)
+                t_potential = - np.array(self.constellation)[None,:].T * s[var_idx, var_jdx] * np.array(self.constellation) / noise_var
+                t_potential = t_potential - t_potential.max()
+                t_ij = np.exp(t_potential)
                 self.graph.factor(["x{}".format(var_jdx), "x{}".format(var_idx)],
                                   potential=t_ij)
 

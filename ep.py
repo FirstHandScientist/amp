@@ -9,7 +9,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import itertools
 from collections import defaultdict
-
+import pickle
 from joblib import Parallel, delayed
 from scipy.stats import multivariate_normal
 from modules import GaussianDiag, EP, MMSE, PowerEP, StochasticEP, ExpansionEP, ExpansionPowerEP, ExpectationConsistency, LoopyBP, LoopyMP, PPBP, AlphaBP, MMSEalphaBP, ML, VariationalBP, MMSEvarBP, EPalphaBP, StochasticBP
@@ -21,50 +21,36 @@ from utils import channel_component, sampling_noise, sampling_signal, sampling_H
 
 # configuration
 class hparam(object):
-    num_tx = 4
-    num_rx = 4
-    soucrce_prior = [0.5, 0.5]
+    num_tx = 2
+    num_rx = 2
+    soucrce_prior = [0.25, 0.25, 0.25, 0.25]
     signal_var = 1
-    snr = np.linspace(1,40, 10)
-    monte = 50
-    # power_n = 4./3
-    constellation = [int(-1), int(1)]
-
-    # EC_beta = 0.2
+    snr = np.linspace(1,100, 10)
+    monte = 30
+    constellation = [int(-2), int(-1), int(1), int(2)]
     alpha = 0.4
-    #algos_list = ["MMSE", "EP", "PowerEP"]
-    # algos = {"MMSE": {"detector": MMSE},
-    #          "EP": {"detector": EP},
-    #          "ExpansionEP": {"detector": ExpansionEP},
-    #          "ExpansionPowerEP": {"detector": ExpansionPowerEP}
-    # algos = {"MMSE": {"detector": MMSE},
-    #          "ML": {"detector": ML},
-    #          "LoopyBP": {"detector": LoopyBP},
-    #          "EP": {"detector": EP},
-             
-    #          # "LoopyMP": {"detector": LoopyMP},
-    #          # "VariationalBP": {"detector": VariationalBP},
-    #          # "MMSEvarBP": {"detector": MMSEvarBP},
-    #          "AlphaBP": {"detector": AlphaBP},
-    #          "MMSEalphaBP": {"detector": MMSEalphaBP},
-    #          "EPalphaBP": {"detector": EPalphaBP},
-    #          "PPBP": {"detector": PPBP}
-    # }
-
+    power_n = 2
+    EC_beta = 0.2
     algos = {"MMSE": {"detector": MMSE, "legend": "MMSE"},
              "ML": {"detector": ML, "legend": "MAP"},
-             "AlphaBP": {"detector": AlphaBP, "legend": r'$\alpha$-BP,'+' {}'.format(alpha)},
+             "PowerEP": {"detector": PowerEP, "legend": "Power EP"},
+             "StochasticEP": {"detector": StochasticEP, "legend": "StochasticEP"},
+             "EP": {"detector": EP, "legend": "EP"},
+             "EC": {"detector": ExpectationConsistency, "legend": "EC"},
+             # "AlphaBP": {"detector": AlphaBP, "legend": r'$\alpha$-BP,'+' {}'.format(alpha)},
              "MMSEalphaBP": {"detector": MMSEalphaBP, "legend":r'$\alpha$-BP+MMSE,'+' {}'.format(alpha)},
-             "StochasticBP": {"detector": StochasticBP, "legend":"SBP,"+' {}'.format(alpha)},
-             # "EP": {"detector": EP, "legend": "EP"},
-             # "EPalphaBP": {"detector": EPalphaBP, "legend": r'$\alpha$-BP+EP,'+' {}'.format(alpha)}
-             # "PPBP": {"detector": PPBP}
-
+             "ExpansionEP": {"detector": ExpansionEP, "legend": "Expansion EP"},
+             "StochasticBP": {"detector": StochasticBP, "legend":"Stochastic BP,"+' {}'.format(alpha)},
+             
+             "EPalphaBP": {"detector": EPalphaBP, "legend": r'$\alpha$-BP+EP,'+' {}'.format(alpha)}
              }
     
     iter_num = {"EP": 10,
-                "EC": 50,
-                "StochasticBP":100,
+                "EC": 10,
+                "PowerEP": 10,
+                "StochasticEP":10,
+                "ExpansionEP": 10,
+                "StochasticBP":50,
                 "LoopyBP": 50,
                 "PPBP": 50,
                 "AlphaBP": 50,
@@ -112,8 +98,8 @@ def task(snr):
 
 
 
-            est_complex_symbol = real2complex(estimated_symbol)
-            error = np.sum(true_symbol != est_complex_symbol)
+            # est_complex_symbol = real2complex(estimated_symbol)
+            error = np.sum(x != estimated_symbol)
             
             tmp[key].append(error)
 
@@ -125,56 +111,61 @@ def task(snr):
  
     return performance
 
-results = []
-def collect_result(result):
-    global results
-    results.append(result)
+if (__name__ == '__main__'):
+    results = []
+    def collect_result(result):
+        global results
+        results.append(result)
 
-pool = mp.Pool(mp.cpu_count())
+    pool = mp.Pool(mp.cpu_count())
+    # pool = mp.Pool(hparam.snr.shape[0])
 
-
-# RESULTS = Parallel(n_jobs=1, pre_dispatch="all", verbose=11, backend="threading")(map(delayed(worker), list(hparam.snr)))
-# for snr in list(hparam.snr):
-#     pool.apply_async(task, args=(snr), callback=collect_result)
-# task(hparam.snr[1])
-results = pool.map(task, list(hparam.snr))
-
-
-#results = [r for r in result_objects]
-
-pool.close()
+    # RESULTS = Parallel(n_jobs=1, pre_dispatch="all", verbose=11, backend="threading")(map(delayed(worker), list(hparam.snr)))
+    # for snr in list(hparam.snr):
+    #     pool.apply_async(task, args=(snr), callback=collect_result)
+    # task(hparam.snr[1])
+    results = pool.map(task, list(hparam.snr))
 
 
-performance = defaultdict(list)
+    #results = [r for r in result_objects]
 
-#for the_result in RESULTS:
-for snr in list(hparam.snr):
-    for the_result in results:
-        if the_result["snr"] == snr:
-            for key, _ in hparam.algos.items():                
-                performance[key].append( the_result[key] )
-
-    
-    
-    
-# for snr in hparam.snr:
+    pool.close()
 
 
-marker_list = ["o", "<", "+", ">", "v", "1", "2", "3", "8", "*", "h", "d", "D"]
-iter_marker_list = iter(marker_list)
-fig, ax = plt.subplots()
-for key, method in hparam.algos.items():
-    ax.semilogy(hparam.snr, performance[key],
-                # label = key + "_Iteration:{}".format(hparam.iter_num[key]) if "MMSE" not in key else "MMSE",
-                label = method['legend'],
-                marker=next(iter_marker_list))
-    
-ax.legend(loc="best", fontsize='small', ncol=2)
+    performance = defaultdict(list)
 
-ax.set(xlabel="ration of signal to noise variance", ylabel="SER")
-ax.grid()
-fig.savefig("figures/experiments_alpha{}_sum.pdf".format(int(hparam.alpha/0.1)))
-#plt.show()
+    #for the_result in RESULTS:
+    for snr in list(hparam.snr):
+        for the_result in results:
+            if the_result["snr"] == snr:
+                for key, _ in hparam.algos.items():                
+                    performance[key].append( the_result[key] )
+
+
+
+
+    # save the experiments results first
+    with open("figures/ep_results.pkl", 'wb') as handle:
+        pickle.dump(performance, handle)
+
+
+    # Plot the experiments results
+    marker_list = ["o", "<", "+", ">", "v", "1", "2", "3", "8", "*", "h", "d", "D"]
+    iter_marker_list = iter(marker_list)
+    # fig = plt.figure(1)
+    # ax = fig.add_subplot(111)
+    fig, ax = plt.subplots()
+    for key, method in hparam.algos.items():
+        ax.semilogy(hparam.snr, performance[key],
+                    label = method['legend'],
+                    marker=next(iter_marker_list))
+
+    lgd = ax.legend(bbox_to_anchor=(1.64,1), borderaxespad=0)
+
+    ax.set(xlabel="ration of signal to noise variance", ylabel="SER")
+    ax.grid()
+    fig.savefig("figures/ep_experiments_alpha{}.pdf".format(int(hparam.alpha/0.1)), bbox_extra_artists=(lgd,), bbox_inches='tight')
+    #plt.show()
 
         
         
