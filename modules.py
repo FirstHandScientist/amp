@@ -397,8 +397,9 @@ class LoopyBP(object):
         s = np.matmul(h_matrix.T, h_matrix)
         for var_idx in range(h_matrix.shape[1]):
             # set the first type of potentials, the standalone potentials
-            f_x_i = np.exp( (-0.5 *s[var_idx, var_idx] * np.power(self.constellation, 2)
-                             + h_matrix[:, var_idx].dot(observation) * np.array(self.constellation))/noise_var)
+            f_potential = (-0.5 *s[var_idx, var_idx] * np.power(self.constellation, 2) + h_matrix[:, var_idx].dot(observation) * np.array(self.constellation))/noise_var
+            f_potential = f_potential - f_potential.max()
+            f_x_i = np.exp(f_potential )
             self.graph.factor(["x{}".format(var_idx)],
                               potential=f_x_i)
 
@@ -407,8 +408,9 @@ class LoopyBP(object):
 
             for var_jdx in range(var_idx + 1, h_matrix.shape[1]):
                 # set the cross potentials
-                t_ij = np.exp(- np.array(self.constellation)[None,:].T
-                              * s[var_idx, var_jdx] * np.array(self.constellation) / noise_var)
+                t_potential = - np.array(self.constellation)[None,:].T * s[var_idx, var_jdx] * np.array(self.constellation) / noise_var
+                t_potential = t_potential - t_potential.max()
+                t_ij = np.exp(t_potential)
                 self.graph.factor(["x{}".format(var_jdx), "x{}".format(var_idx)],
                                   potential=t_ij)
         
@@ -505,8 +507,9 @@ class StochasticBP(AlphaBP):
                                             np.array([0,0]))
                 
                 if not np.all(test_condition):
-                    t_ij = np.exp(- np.array(self.constellation)[None,:].T
-                                  * s[var_idx, var_jdx] * np.array(self.constellation) / noise_var)
+                    t_potential = - np.array(self.constellation)[None,:].T * s[var_idx, var_jdx] * np.array(self.constellation) / noise_var
+                    t_potential = t_potential - t_potential.max()
+                    t_ij = np.exp(t_potential)
                     t_ij = t_ij/t_ij.sum()
                     subgraph.factor(["x{}".format(var_jdx), "x{}".format(var_idx)],
                                     potential= np.power(t_ij, self.learning_rate))
@@ -579,9 +582,11 @@ class LoopyMP(LoopyBP):
         s = np.matmul(h_matrix.T, h_matrix)
         for var_idx in range(h_matrix.shape[1]):
             # set the first type of potentials, the standalone potentials
-            f_x_i = np.exp((-0.5 *s[var_idx, var_idx] * np.power(self.constellation, 2) \
+            f_potential = (-0.5 *s[var_idx, var_idx] * np.power(self.constellation, 2) \
                             + h_matrix[:, var_idx].dot(observation) \
-                            * np.array(self.constellation))/noise_var)
+                            * np.array(self.constellation))/noise_var
+            f_potential = f_potential - f_potential.max()
+            f_x_i = np.exp(f_potential)
             self.graph.factor(["x{}".format(var_idx)],
                               potential=f_x_i)
 
@@ -590,8 +595,9 @@ class LoopyMP(LoopyBP):
 
             for var_jdx in range(var_idx + 1, h_matrix.shape[1]):
                 # set the cross potentials
-                t_ij = np.exp(- np.array(self.constellation)[None,:].T \
-                              * s[var_idx, var_jdx] * np.array(self.constellation) / noise_var )
+                t_potential = - np.array(self.constellation)[None,:].T * s[var_idx, var_jdx] * np.array(self.constellation) / noise_var 
+                t_potential = t_potential - t_potential.max()
+                t_ij = np.exp(t_potential)
                 self.graph.factor(["x{}".format(var_jdx), "x{}".format(var_idx)],
                                   potential=t_ij)
     
