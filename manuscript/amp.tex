@@ -1,0 +1,67 @@
+% Created 2019-03-13 Wed 20:59
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{fixltx2e}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{float}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{textcomp}
+\usepackage{marvosym}
+\usepackage{wasysym}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\tolerance=1000
+\author{Dong Liu}
+
+
+\title{alpha-EP for MIMO}
+\hypersetup{
+  pdfkeywords={},
+  pdfsubject={},
+  pdfcreator={Emacs 25.3.2 (Org mode 8.2.10)}}
+
+\begin{document}
+Original distribution/target distribution:
+\begin{equation}
+  p(x) = \prod_i t_i(x)
+\end{equation}
+
+\maketitle
+\tableofcontents
+
+
+\section{Problem}
+\label{sec-1}
+Original distribution/target distribution:
+\begin{equation}
+  p(x) = \prod_i t_i(x)
+\end{equation}
+Approximation distribution:
+\begin{equation}
+  q(x) = \prod_i \tilde{t}_i(x)
+\end{equation}
+
+\section{$\alpha$-divergence definition}
+\label{sec-2}
+\begin{equation}
+  D_{\alpha}(p\|q) = \frac{4}{1-\alpha^2} \left( 1 - \int_x p^{(1+\alpha)/2} q^{(1-\alpha)/2} \right)
+\end{equation}
+
+\section{$\alpha$-EP steps}
+\begin{itemize}
+  \item[] Initialize $q(x)$ to optimize.
+  \item[] Repeat till convergence:\\
+    For $i$ component in $q$:
+    \begin{align}
+      q^{\backslash i}(x) &= q(x) / \tilde{t}_i(x)\\
+%      q^{new}(x)  &= \argmin_{\tilde{t}_i(x)} D_{\alpha}(t_i(x)q^{\backslash i}(x)\| q(x)) \\
+      \tilde{t}^{new}(x) &= q^{new}(x)/q^{\backslash i}(x)
+    \end{align}
+\end{itemize}    
+    % Emacs 25.3.2 (Org mode 8.2.10)
+  \end{document}
