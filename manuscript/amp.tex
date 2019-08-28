@@ -15,6 +15,10 @@
 \usepackage{wasysym}
 \usepackage{amssymb}
 \usepackage{hyperref}
+\usepackage{bm}
+\usepackage{mystyle}
+\DeclarePairedDelimiter{\diagfences}{(}{)}
+\newcommand{\diag}{\operatorname{diag}\diagfences}
 \tolerance=1000
 \author{Dong Liu}
 
@@ -26,42 +30,383 @@
   pdfcreator={Emacs 25.3.2 (Org mode 8.2.10)}}
 
 \begin{document}
-Original distribution/target distribution:
-\begin{equation}
-  p(x) = \prod_i t_i(x)
-\end{equation}
-
 \maketitle
 \tableofcontents
 
 
-\section{Problem}
-\label{sec-1}
-Original distribution/target distribution:
+\section{Preview}
+\begin{itemize}
+\item[\checkmark] Expectation Propagation (EP)
+\item[\checkmark] PowerEP and alpha-EP
+  \begin{itemize}
+  \item[\checkmark] show improvement
+  \item [?] how to formulate the choice of alpha according to communication condition. Intuition:
+    % \begin{itemize}
+    % \item[-] when $q$ in approximation family that fits $p$, choice of divergence does not matter
+
+    % \item[-] $q$'s family fits $p$ poor, it is safer to use exclusive divergence $\alpha \rightarrow 0$
+    % \end{itemize}
+  \end{itemize}
+\item[\checkmark] Improvement/correction trick of EP
+  \begin{itemize}
+  \item[\checkmark] First order correction
+  \item[$\times$] Do not suggest
+  \end{itemize}
+  
+\item[\checkmark] Stochastic EP
+  \begin{itemize}
+  \item[-] simpler model, similar a bit worse performance than EP
+  \end{itemize}
+\item[\checkmark] Expectation Consistency
+  
+  \begin{itemize}
+  \item[\checkmark] Single Loop
+    \begin{itemize}
+    \item[$?$] Improvement suggestion: full 2-order statistics, to Joao with low investigation priority
+    \end{itemize}
+    
+  \item[$?$] Double Loop
+    \begin{itemize}
+    \item[-] Not really suggest for its complexity
+    \end{itemize}
+    
+  \end{itemize}
+  
+  
+\end{itemize}
+\begin{itemize}
+\item[$\times$] LU decomposition (Nima)
+\item[\checkmark] Assembling/Boosting, mono-combination
+  \begin{itemize}
+  \item[$\times$] Assembling LU decomposition with permutation (Joao)
+  \item[$\times$] Assembling multiple GTA approximations (Joao)
+  \item[$?$] Waiting results for other combination strategies
+    
+  \end{itemize}
+\item[\checkmark] Assembling/Boosting, mix-combination (Nima)
+  \begin{itemize}
+  \item[\checkmark] GTA + EP
+  \item[\checkmark] GTA-SIC + EP
+  \end{itemize}
+\item[$?$] Other Assembling/Boosting or Combination?
+
+\end{itemize}
+
+$\alpha$-BP
+\section{Problem}\label{sec:problem}
+The problem setting is the for observable signal $\bm{y}$, there is a true underlining signal $\bm{x}$ that results in the observation $\bm{y}$. Here $\bm{x}$ is assumed to lie in a discrete finite set, i.e. $\bm{x} \in {\Aa}^{N}$ and we denote its $i$-th element $x_i \in \Aa$. $\bm{y}\in \RR^N$. The further assumption between the relationship between $\bm{y}$ and $\bm{x}$ is linear with Gaussian noise $\bm{w}$, i.e. $\bm{w}\sim \Nn(\bm{0}, \sigma_{w}^2 \bm{I})$. The linear can be formulated as:
 \begin{equation}
-  p(x) = \prod_i t_i(x)
+  \bm{y} = \bm{H} \bm{x} + \bm{w}.
 \end{equation}
-Approximation distribution:
+The optimal way to estimate $\bm{x}$ is to look for the maximum a posterior (MAP) to
 \begin{equation}
-  q(x) = \prod_i \tilde{t}_i(x)
+  p(\bm{x}|\bm{y}) \sim \Nn(\bm{y}: \bm{H}\bm{x}, \sigma_{w}^2\bm{I})\delta_{\bm{x}\in \Aa}.
+\end{equation}
+To avoid the complex computation, the original posterior is factorized into
+\begin{equation}
+  p(\bm{x}|\bm{y}) = \prod_i t_i(\bm{x}).
+\end{equation}
+Then, we try solve the problem with an approximated distribution 
+\begin{equation}\label{eq:apx-dist-q}
+  q(\bm{x}) = \prod_i \tilde{t}_i(\bm{x}).
 \end{equation}
 
-\section{$\alpha$-divergence definition}
-\label{sec-2}
+------------------------
+
+\begin{itemize}
+\item[] Initialize $q(x)$ to optimize.
+\item[] Repeat till convergence:\\
+  For $i$ component in $q$:
+  \begin{align}
+    q^{\backslash i}(x) &= q(x) / \tilde{t}_i(x)\\
+    % q^{new}(x)  &= \argmin_{\tilde{t}_i(x)} D_{\alpha}(t_i(x)q^{\backslash i}(x)\| q(x)) \\
+    \tilde{t}^{new}(x) &= q^{new}(x)/q^{\backslash i}(x)
+  \end{align}
+\end{itemize}    
+
+\section{Expectation Propagation (EP)} \label{sec:EP}
+For the EP algorithm, we basically follow \cite{cespedes2014mimo} to establish a baseline algorithm.
+In this algorithm, the approximated distribution is assumed to be:
+\begin{equation}\label{eq:q-ep}
+  q(\bm{x}) \sim \Nn(\bm{y}: \bm{H}\bm{x}, \sigma_{w}^2\bm{I}) \prod_{i=1}^{N} \exp\left( \gamma_i x_i - \frac{1}{2}\Lambda_i x_i^2 \right),
+\end{equation}
+where $\gamma_i \in \RR$ and $\Lambda_i \in \RR^{+}$ are the parameters to be estimated in EP. It is clear that $q(\bm{x})$ in \eqref{eq:q-ep} belongs to exponential family, Gaussian distribution to be specific:
+\begin{equation}
+  q(\bm{x}) \sim \Nn\left(\bm{x}:\bm{\mu}, \bm{\Sigma} \right),
+\end{equation}
+where we have its distribution parameter as
+\begin{align}
+  \bm{\Sigma} &= \left( \sigma_{w}^2\bm{H}^{T}\bm{H} +  \diag{\bm{\Lambda}} \right)^{-1}, \\
+  \bm{\mu} & = \bm{\Sigma}\left( \sigma_{w}^2\bm{H}^{T}\bm{y} +  \bm{\gamma} \right).
+\end{align}
+where $\diag{\Lambda}$ is a diagnal matrix with $\Lambda_i$ as diagnal elements, $\bm{\gamma}=[\gamma_1, \gamma_2, \cdots, \gamma_N]^{T}$.
+
+The EP algorithm keeps updating the parameters of $q(\bm{x})$ until it meets the stop criteria, after which the most probable $\bm{x}$ is estimated by using updated $q(\bm{x})$. To be specific, the iterations of EP can be detailed as follows:
+\begin{itemize}
+\item Update the marginal distribution of the cavity distribution at iteration $t$:
+  \begin{equation}
+    q^{(l)\backslash i}(u_i) = \frac{q^{(l)(u_i)}}{\exp\left( \gamma_i^{(l)}u_i - \frac{1}{2}\Lambda_i^{(l)}u_i^2 \right)} ,
+  \end{equation}
+  which is a Gaussian distribution. Let us denote this distribution as $q^{(l)\backslash i}(u_i) = \Nn\left( u_i: t_i^{(l)}, h_i^{2(l)} \right)$, with
+  \begin{align}
+    h_i^{2 (l)} &= \frac{\sigma_i^{2 (l)}}{1-\sigma_i^{2 (l)} \Lambda_i^{(l)}}, \\
+    t_i^{(l)} &= h_i^{2(l)}\left( \frac{\mu_i^{(l)}}{\sigma_i^{2(l)}} - {\gamma_i^{(l)}} \right).
+  \end{align}
+  
+
+\item Corresponding marginal distribution of cavity distribution of $p(\bm{x})$:
+  \begin{equation}
+    \hat{p}^{(l)}(u_i) \sim q^{(l)\backslash i}(u_i)\delta_{u_i \in \Aa_i}.
+  \end{equation}
+\item Update the statistics parameter $\left( \bm{\gamma}, \bm{\Lambda} \right)$ of $q$, where the marginal distribution:
+  \begin{equation}
+    q^{(l+1)\backslash i}(u_i) \sim q^{(l)\backslash i}(u_i) \exp\left\{ \gamma_i^{(l+1)}u_i - \frac{1}{2}\Lambda_i^{(l+1)}u_i^2 \right\},
+  \end{equation}
+  where $q^{(t+1)\backslash i}(u_i)$ is parameterized by $\left(\bm{\gamma}, \bm{\Lambda}\right)$. This pair can be updated by:
+  \begin{align}
+    \Lambda_i^{(l+1)} = \frac{1}{\sigma_{p_i}^{2(l)}} - \frac{1}{h_i^{2(l)}} \\
+    \gamma_i^{(l+1)} = \frac{\mu_{p_i}^{(t)}}{\sigma_{p_i}^{2(t)}} - \frac{t_i^{(t)}}{h_i^{2(t)}}.
+  \end{align}
+  
+\end{itemize}
+
+When stop criteria is meet, estimation is made by using $q(\bm{x}) \sim \Nn\left(\bm{x}:\bm{\mu}^{\ast}, \bm{\Sigma}^{\ast} \right)$, where
+\begin{align}
+  \bm{\Sigma}^{\ast} &= \left( \sigma_{w}^2\bm{H}^{T}\bm{H} +  \diag{\bm{\Lambda}^{\ast}} \right)^{-1}, \\
+  \bm{\mu}^{\ast} & = \bm{\Sigma}^{\ast}\left( \sigma_{w}^2\bm{H}^{T}\bm{y} +  \bm{\gamma}^{\ast} \right)
+\end{align}
+are returned by the above EP iterations. The decision is made by:
+\begin{equation}
+  \hat{\mu}_{i} = \uargmin{\mu_i \in \Aa} \abs{\mu_i - \mu_i^{\ast}}
+\end{equation}
+
+\section{Power EP}
+In this section, we explain a variant of EP algorithm, known as power EP in literature \cite{minka2004power}.
+Power EP has similar procedure of update as EP has. We would mainly discuss the difference here.
+
+The power EP algorithm stems from a alpha-deiverge:
 \begin{equation}
   D_{\alpha}(p\|q) = \frac{4}{1-\alpha^2} \left( 1 - \int_x p^{(1+\alpha)/2} q^{(1-\alpha)/2} \right)
 \end{equation}
 
-\section{$\alpha$-EP steps}
+The meta algorithm of power EP can be summarize in high level steps as follows.
 \begin{itemize}
-  \item[] Initialize $q(x)$ to optimize.
-  \item[] Repeat till convergence:\\
-    For $i$ component in $q$:
+\item Initialize $q(\bm{x}) \sim t_0(\bm{x})\prod_{i}\tilde{t}_i(x_i)$
+\item Repeat:
+  \begin{align}
+    q^{\backslash i}(\bm{x}) &= q(\bm{x})/\tilde{t}_i(x_i), \forall i,\\
+    q^{\mathrm{new}}(\bm{x}) &= \uargmin{q} D_{\alpha}\left( t_i(x_i)q^{\backslash i}(\bm{x}) \| \tilde{t}_i(x_i)q^{\backslash i}(\bm{x}) \right) \\
+    \tilde{t}^{\mathrm{new}}_{i}(x_i) &= q^{\mathrm{new}}(\bm{x})/q^{\backslash i}(\bm{x}), \forall i.
+  \end{align}
+\end{itemize}
+
+To apply the above power EP algorithm into the problem in Section~\ref{sec:problem}. We also need the equivalence condition as follows:
+\begin{equation}\label{eq:min_kl_eqv}
+  \uargmin{q} D_{\alpha}\left( t_i(x_i)q^{\backslash i}(\bm{x}) \| \tilde{t}_i(x_i)q^{\backslash i}(\bm{x}) \right) = \uargmin{q} KL\left( f_i(x_i)q^{\backslash \tilde{f}_i}(\bm{x}) \| q(\bm{x}) \right),
+\end{equation}
+where
+\begin{align}
+  f_i(x_i) &= [t_i(x_i)]^{1/n} \\
+  \alpha &= 2/n -1.  
+\end{align}
+
+By applying the above rules to the problem in Section~\ref{sec:problem}, then
+\begin{align}
+  f_i(x_i) &= [t_i(x_i)]^{1/n} = [\delta_{x_i \in \Aa}]^{1/n} = \delta_{x_i \in \Aa}, \\
+  \tilde{f}_{i}(x_i) &= [\tilde{t}_i(x_i)]^{1/n} = \exp\left(\frac{\gamma_i x_i - \frac{1}{2}\Lambda_i x_i^2}{n}\right).
+\end{align}
+Assume $\phi(x_i)$ is the sufficient statistics of variables $x_i$. Solving problem in \eqref{eq:min_kl_eqv} givens
+\begin{align}
+  \EE_{q^{\backslash \tilde{f}_i}(\bm{x}) \tilde{f}^{\mathrm{new}}_i(x_i)}[\phi(x_i)] = \EE_{q^{\backslash \tilde{f}_i}(\bm{x})f_i(x_i)}[\phi(x_i)],
+\end{align}
+which is equivalent to 
+\begin{align}
+  \int_{\bm{x}} q^{\backslash \tilde{f}_i}(x)\tilde{f}^{\mathrm{new}}_i(x_i) \phi(x_i) d\bm{x} &= \int_{\bm{x}} q^{\backslash \tilde{f}_i}(x){f}_i(x_i) \phi(x_i) d\bm{x} \\
+                                                                                               &= \int_{\bm{x}} q^{\backslash \tilde{f}_i}(x)\delta_{x_i \in \Aa} \phi(x_i) d\bm{x}.
+\end{align}
+By simplifying the above on marginals:
+\begin{equation}
+  \int_{x_i} q_i^{\backslash\tilde{f}_i}(x_i) \tilde{f}_i^{\mathrm{new}}(x_i) \phi(x_i) = \int_{x_i} \delta_{x_i \in \Aa} q_i^{\backslash \tilde{f}_i}(x_i) \phi(x_i) d x_i,
+\end{equation}
+where
+\begin{equation}
+  q_i^{\backslash\tilde{f}_i}(x_i) = \int \frac{q(\bm{x})}{\tilde{f}_i(x_i)}d x_1 d x_2 \cdots d x_{i-1} d x_{i+1} \cdots d x_n.
+\end{equation}
+
+Similar to Section~\ref{sec:EP}, we use notation
+\begin{equation}\label{eq:power-ep-moments-hat}
+  \int_{x_i} \delta_{x_i \in \Aa} q_i^{\backslash \tilde{f}_i}(x_i) \phi(x_i) d x_i = [\mu_{p_i}, \sigma_{p_i}^2]^{T}, \forall i.
+\end{equation}
+We summarize the algorithm steps for power EP as follow:
+\begin{itemize}
+\item Update the marginal distribution of the cavity distribution at iteration $t$:
+  \begin{equation}
+    q^{(l)\backslash i}(u_i) = \frac{q^{(l)(u_i)}}{\tilde{f}_i(x_i)} \sim \Nn\left( x_i; t_i, h_i^2 \right),
+  \end{equation}
+  where
+  \begin{align}
+    h_i^{2 (l)} &= \frac{\sigma_i^{2 (l)}}{1-\sigma_i^{2 (l)} \Lambda_i^{(l)}/n}, \\
+    t_i^{(l)} &= h_i^{2(l)}\left( \frac{\mu_i^{(l)}}{\sigma_i^{2(l)}} - {\gamma_i^{(l)}}/n \right).
+  \end{align}
+  
+\item Compute the statics mean $\mu_{p_i}^{(l)}$ and variance $\sigma^{2(l)}_{p_i}$  according to \eqref{eq:power-ep-moments-hat} at iteration $l$.
+  
+\item Update the statistics parameter $\left( \bm{\gamma}, \bm{\Lambda} \right)$ of $q$, such that the statics of
+  \begin{equation}
+    q^{(l+1)\backslash \tilde{f}_{i}}(x_i) \tilde{f}_{i}^{(l+1)} \sim \exp\left\{ -\frac{(x_i - t_i)^2}{2h_i^2} \right\} \exp\left\{ \gamma_i^{(l+1)}u_i - \frac{1}{2}\Lambda_i^{(l+1)}u_i^2 \right\},
+  \end{equation}
+  is the same as $\mu_{p_i}^{(l)}$, $\sigma_{p_i}^{2(l)}$. Solving this moments matching problem gives
+  \begin{align}
+    \Lambda_i^{(l+1)} = n \left[  \frac{1}{\sigma_{p_i}^{2(l)}} - \frac{1}{h_i^{2(l)}} \right]\\
+    \gamma_i^{(l+1)} = n \left[ \frac{\mu_{p_i}^{(t)}}{\sigma_{p_i}^{2(t)}} - \frac{t_i^{(t)}}{h_i^{2(t)}} \right].
+  \end{align}
+\end{itemize}
+
+\section{Improvement on EP}
+In this section, some improvement trick on EP is used following Opper's work in \cite{opper2008impovingEP}. The intuition of improving EP comes from that the partition function of EP approximation should be the as close as possible to the partition of original function. In this section we still follow the same notation for model distribution and approximate distortion as previous sections:
+\begin{align}
+  &\mathrm{Model~ distribution:} p(\bm{x}) \sim \Nn(\bm{y}: \bm{H}\bm{x}, \sigma_{w}^2\bm{I})\prod_{i=1}^{N}\delta_{{x_i}\in \Aa} = t_0(\bm{x})\prod_{i=1}^{N}t_i(x_i)\\
+  &\mathrm{Approximate:} q(\bm{x}) \sim \Nn(\bm{y}: \bm{H}\bm{x}, \sigma_{w}^2\bm{I}) \prod_{i=1}^{N} \exp\left( \gamma_i x_i - \frac{1}{2}\Lambda_i x_i^2 \right)=t_0(\bm{x})\prod_{i=1}^{N}\tilde{t}_i(x_i)&
+\end{align}
+
+The $i$-th title distribution is as:
+\begin{equation}
+  \hat{p}_i(\bm{x}) \sim \frac{q(\bm{x})}{\tilde{t}_i(x_i)} t_i(x_i).
+\end{equation}
+
+The first order correction is to estimate by the following approximation:
+\begin{equation}\label{eq:imp-ep-1order}
+  p(\bm{x}) \sim \sum_{i} \hat{p}_i(\bm{x}) - (N-1) q(\bm{x}),
+\end{equation}
+where we need to compute the 1st moment of above for approximation, since that what we need for estimate $\bm{x}$. Then the problem is boiled down to the moment computation:
+\begin{align}\label{eq:1st-order-crrt}
+  \hat{\mu}_{1EP}=&\int_{x_i}\left[ \sum_{i=1}^{N} \hat{p}_i(x_i) - (N-1)q(x_i) \right]x_i d x_i \nonumber\\
+                  &=\left[ \sum_{n=1}^{N} \int_{x_i}\hat{p}_i(x_i) d x_i \right] - (N-1)\int_{x_i}q(x_i) x_i d x_i,
+\end{align}
+where $\hat{p}_i(x_i)$ is the $i$th marginal of $\hat{p}_i(\bm{x})$, and $q(x_i)$ is the $i$th marginal of $q(\bm{x})$. Let us use the notation as:
+\begin{align}
+  \int \hat{p}_i(x_i) x_i d x_i &= \mu_{\hat{p}_i(x_i)}, \\
+  \int \hat{p}_i(x_j) x_j d x_j &= \mu_{j}, \\
+\end{align}
+where $i \neq j$. Due to the fact that $q$ is Gaussian, $q(\bm{x}) = \Nn(\bm{x}; \bm{\mu}, \bm{\Sigma})$ and $q(x_i) = \Nn(x_i; \mu_i, \Sigma_{ii})$, the Equation~\eqref{eq:1st-order-crrt} becomes
+\begin{equation}
+  \hat{\mu}_{1EP} = \mu_{\hat{p}_i(x_i)} + (N-1) \mu_i - (N-1) \mu_i = \mu_{\hat{p}_i(x_i)}.
+\end{equation}
+Then the detection via first order corrected EP is
+\begin{equation}
+  \hat{x}_i = \uargmin{x_i} \abs{x_i - \mu_{\hat{p}_i(x_i)}}.
+\end{equation}
+
+\section{Stochastic EP}
+In this section, we discuss a another variant of EP, named stochastic EP, which is proposed in []. The algorithm comes with the intuition of updating an approximate distribution in a stochastic way.
+
+In stochastic EP, all approximate factors of $q(\bm{x})$ share the same parameter $\gamma$, $\Lambda$. In this case, the approximate distribution $q(\bm{x})$ is different from the previous sections. Here $q$ has the form of:
+\begin{equation}
+  q(\bm{x}) \sim \Nn(\bm{y}: \bm{H}\bm{x}, \sigma_w^2 \bm{I}) \prod_{i=1}^{N} e^{\gamma x_i - \frac{1}{2}\Lambda x_i^2} \sim \Nn(\bm{x}: \bm{\mu}, \bm{\Sigma}),
+\end{equation}
+where
+\begin{align}
+  \bm{\Sigma} &= (\sigma_w^2\bm{H}^T\bm{H} + \Sigma \bm{I})^{-1},\\
+  \bm{\mu} & = \bm{\Sigma} ( \sigma_w^2\bm{H}^T\bm{y} + \gamma \bm{1}),
+\end{align}
+in which $\bm{I}$ is unitary matrix and $\bm{1}$ is a vectors with all elements of ones. This setting of models has the following pros and cons:
+\begin{itemize}
+\item[Pros:] Model complexity does not scale with the number of fixed points/length of $\bm{x}$. In another word, large size of $\bm{H}$ does not necessarily bring large number of parameters to estimate.
+\item[Cons:] Due to the simplicity of model setting, it may not bring accurate enough detection.
+\end{itemize}
+
+The algorithm steps are the same as EP but the update functions differ:
+\begin{itemize}
+\item Update the marginal distribution of the cavity distribution at iteration $t$:
+  \begin{equation}
+    q^{(l)\backslash i}(u_i) = \frac{q^{(l)(u_i)}}{\exp\left( \gamma^{(l)}u_i - \frac{1}{2}\Lambda^{(l)}u_i^2 \right)} ,
+  \end{equation}
+  which $q^{(l)\backslash i}(u_i) = \Nn\left( u_i: t_i^{(l)}, h_i^{2(l)} \right)$, with
+  \begin{align}
+    h_i^{2 (l)} &= \frac{\sigma_i^{2 (l)}}{1-\sigma_i^{2 (l)} \Lambda^{(l)}}, \\
+    t_i^{(l)} &= h_i^{2(l)}\left( \frac{\mu_i^{(l)}}{\sigma_i^{2(l)}} - {\gamma^{(l)}} \right).
+  \end{align}
+  
+
+\item Compute the mean $\mu_{p_i}^2$ and variance $\sigma_{p_i}^2$ in the same way as in Section~\ref{sec:EP}.
+\item Update the statistics parameter $\left( {\gamma}, {\Lambda} \right)$ of $q$, in the same way as in Section~\ref{sec:EP}.
+\end{itemize}
+Note above only use one data sample to update per iteration. Since one data sample contain only limited information, it is suggested to do soft update:
+\begin{equation}
+  \tilde{t}^{(l+1)}_i(x_i) \gets [\tilde{t}_i^{(l)}(x_i)]^{1-\epsilon} [\tilde{t}^{(l+1)}_i(x_i)]^{\epsilon}.
+\end{equation}
+Then the final update step in Stochastic EP becomes:
+\begin{align}
+  \Lambda^{(l+1)} = \epsilon\left[ \frac{1}{\sigma_{p_i}^{2(l)}} - \frac{1}{h_i^{2(l)}}  \right] + (1- \epsilon) \Lambda^{(l)}\\
+  \gamma^{(l+1)} = \epsilon \left[  \frac{\mu_{p_i}^{(t)}}{\sigma_{p_i}^{2(t)}} - \frac{t_i^{(t)}}{h_i^{2(t)}} \right] + (1 - \epsilon) \Lambda^{(l)}.
+\end{align}
+Here the parameter $\epsilon$ can be chosen to depend on the information that each iteration of stochastic EP uses from dataset. Say $\epsilon  = 1/N$ if each iteration uses one data sample to update, or $\epsilon = \mathrm{batch~size}/N$ in batch fashion.
+
+\section{Expectation Consistency (EC)}
+In this section, we present the expectation consistency (EC) algorithm. EC is originally proposed by Opper in \cite{opper2005ec}, where the approximation is obtained by maintaining partition/normalization function. The application for MIMO is tested in \cite{cespedes2018ecmimo}.
+
+The original distribution is the same as previous sections for EP and its variants, with explicit partition $Z$:
+\begin{equation}
+  p(\bm{x}) = \frac{1}{Z} \Nn(\bm{y}: \bm{H}\bm{x}, \sigma_{w}^2\bm{I}) \frac{1}{N}\prod_{i=1}^{N} \delta_{x_i \in \Aa}.
+\end{equation}
+In EC, two approximations are maintained to $p(\bm{x})$ equivalently:
+\begin{align}
+  f_q(\bm{x}) &= \Nn(\bm{y}: \bm{H}\bm{x}, \sigma^{2}_{w} \bm{I}), \\
+  f_q(\bm{x}) &= \frac{1}{N} \prod_{i=1}^{N} \delta_{x_i \in \Aa}.
+\end{align}
+The three distributions are required to maintained equivalent sufficient statistics:
+\begin{equation}
+  \phi(\bm{x}) = \left[ x_1, x_2, \cdots, x_N, -\frac{x_1^2}{2}, -\frac{x_2^2}{2}, \cdots, -\frac{x_N^2}{2} \right]^{T}.
+\end{equation}
+Let us denote the parameters corresponding to the above statistics of distribution $q(\bm{x})$, $r(\bm{x})$, $s(\bm{x})$ are
+\begin{align}
+  \bm{\lambda}_q &= [\gamma_{q,1}, \gamma_{q,2}, \cdots, \gamma_{q,N}, \Lambda_{q,1}, \Lambda_{q,2}, \cdots, \Lambda_{q,N}] = [\bm{\gamma}_q, \Lambda_q]^{T}, \\
+  \bm{\lambda}_r &= [\gamma_{r,1}, \gamma_{r,2}, \cdots, \gamma_{r,N}, \Lambda_{r,1}, \Lambda_{r,2}, \cdots, \Lambda_{r,N}] = [\bm{\gamma}_r, \Lambda_r]^{T}, \\
+  \bm{\lambda}_s &= [\gamma_{s,1}, \gamma_{s,2}, \cdots, \gamma_{s,N}, \Lambda_{s,1}, \Lambda_{s,2}, \cdots, \Lambda_{s,N}] = [\bm{\gamma}_s, \Lambda_s]^{T}.
+\end{align}
+The distributions corresponding to these parameters are:
+\begin{align}
+  q(\bm{x}) &\sim f_q(\bm{x}) \exp(\bm{\lambda}_q^{T} \phi(\bm{x})) = f_q(\bm{x}) \exp\left( \bm{\gamma}_q^{T}\bm{x} - \frac{\bm{x}^{T}\diag{\bm{\Lambda}_q} \bm{x}}{2} \right) \\
+  r(\bm{x}) &\sim \exp\left(  \bm{\gamma}_r^{T}\bm{x} - \frac{\bm{x}^{T}\diag{\bm{\Lambda}_r} \bm{x}}{2} \right) \prod_{i=1}^{N} \delta_{x_i\in\Aa}, \\
+  s(\bm{x}) &\sim \exp\left(  \bm{\gamma}_s^{T}\bm{x} - \frac{\bm{x}^{T}\diag{\bm{\Lambda}_s} \bm{x}}{2} \right)
+\end{align}
+
+
+The goal of EC is to achieve
+\begin{align}
+  \EE_{q(\bm{x})}[x_i] &= \EE_{r(\bm{x})}[x_i] = \EE_{s(\bm{x})}[x_i], \\
+  \EE_{q(\bm{x})}[x_i^2] &= \EE_{r(\bm{x})}[x_i^2] = \EE_{s(\bm{x})}[x_i^2].
+\end{align}
+
+The steps of EC is as follows:
+\begin{itemize}
+\item Initialize $\bm{\gamma}_q$, $\bm{\Lambda}_q$
+\item Repeat the following iterations:
+  \begin{itemize}
+  \item Given $\bm{\gamma}_q^{(l-1)}$, $\bm{\Lambda}_q^{(l-1)}$, compute $\EE_{q(\bm{x})}[x_i]$, $\EE_{q(\bm{x})}[x_i^2]$
+  \item Compute $\bm{\gamma}_s^{(l)}$, $\bm{\Lambda}_s^{(l)}$ by solving $\EE_{s(\bm{x})}[x_i] = \EE_{q(\bm{x})}[x_i]$ and $\EE_{s(\bm{x})}[x_i^2] = \EE_{q(\bm{x})}[x_i^2]$
+  \item Update $\bm{\gamma}_r^{(l)} = \bm{\gamma}_s^{(l)} - \bm{\gamma}_q^{(l)}$, $\bm{\Lambda}_r^{(l)} = \bm{\Lambda}_s^{(l)} - \bm{\Lambda}_q^{(l)}$
+  \item Given $\bm{\gamma}_r^{(l-1)}$, $\bm{\Lambda}_r^{(l-1)}$, compute $\EE_{r(\bm{x})}[x_i]$, $\EE_{r(\bm{x})}[x_i^2]$
+  \item Compute $\bm{\gamma}_s^{(l)}$, $\bm{\Lambda}_s^{(l)}$ by solving $\EE_{s(\bm{x})}[x_i] = \EE_{r(\bm{x})}[x_i]$ and $\EE_{s(\bm{x})}[x_i^2] = \EE_{r(\bm{x})}[x_i^2]$
+  \item Update
     \begin{align}
-      q^{\backslash i}(x) &= q(x) / \tilde{t}_i(x)\\
-%      q^{new}(x)  &= \argmin_{\tilde{t}_i(x)} D_{\alpha}(t_i(x)q^{\backslash i}(x)\| q(x)) \\
-      \tilde{t}^{new}(x) &= q^{new}(x)/q^{\backslash i}(x)
+      \bm{\gamma}_q^{(l)} &= \beta \left( \bm{\gamma}_s^{(l)} - \bm{\gamma}_r^{(l)} \right) + (1 - \beta) \bm{\gamma}_q^{(l-1)}, \\
+      \bm{\Lambda}_q^{(l)} &= \beta \left( \bm{\Lambda}_s^{(l)} - \bm{\Lambda}_r^{(l)} \right) + (1 - \beta) \bm{\Lambda}_q^{(l-1)}
     \end{align}
-\end{itemize}    
-    % Emacs 25.3.2 (Org mode 8.2.10)
-  \end{document}
+  \end{itemize}
+\end{itemize}
+
+\section{Some Techniques to Gain Detection Performance}
+\subsection{LU}
+\subsection{Assembling/Boosting}
+
+\bibliography{myref}
+\bibliographystyle{plain}
+
+\end{document}
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
