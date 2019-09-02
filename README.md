@@ -23,6 +23,6 @@ $ pip install -r requirements.txt
 ```
 
 # To-do list:
-- [ ] Try different performance with the standard EP, iteration, modulation, SNR
-- [ ] See variant of EP performance, power EP
-- [ ] How about Kernel EP
+- [ ] More explanation in readme
+- [ ] boosting subsection in manuscript
+- [ ] One round of writing check
