@@ -702,12 +702,8 @@ For this experiment, we set $\Aa = \left\{ -1, 1 \right\}$ and $N=9$. Bias $\bm{
 \end{figure}
 \section{Numerical Results}
 
-
-In this section, we made a comparison between the algorithms discussed in this report. The software written for this set of experiments is implemented in Python. The algorithms implemented includes MMSE, expectation propagation, stochastic expectation propagation, power expectation propagation, expansion expectation propagation (correction of expectation propagation), and some improvement tricks. The maximum a posterior is used shown numerically as a reference bound for all algorithms.
-
-The legends explanation for corresponding algorithm are shown as in Table~\ref{tab:lagend}.
-\begin{table}[h]
-  \caption{Legend Explanation}\label{tab:lagend}
+\begin{table}[!t]
+  \caption{Legend Explanation for Experiment Section}\label{tab:lagend}
   \centering
   \begin{tabular}{ |p{3cm}||p{8cm}|  }
     \hline
@@ -724,10 +720,18 @@ The legends explanation for corresponding algorithm are shown as in Table~\ref{t
     \hline
     $\alpha$-BP & $\alpha$ Belief Propagation (Section~\ref{sec:alphabp}) \\
     \hline
-    $\alpha$-BP$+$MMSE & $\alpha$-BP assembled with MMSE as prior (Section~\ref{subsec:assemble,subsec:remark}) \\
+    $\alpha$-BP$+$MMSE & $\alpha$-BP assembled with MMSE as prior (Section~\ref{subsec:assemble},\ref{subsec:remark}) \\
+    \hline
   \end{tabular}
+  \vspace{1cm}
 \end{table}
 
+
+In this section, we made a comparison between the algorithms discussed in this report. The software written for this set of experiments is implemented in Python. The algorithms implemented includes MMSE, expectation propagation, stochastic expectation propagation, power expectation propagation, expansion expectation propagation (correction of expectation propagation), and some improvement tricks. The maximum a posterior is used shown numerically as a reference bound for all algorithms.
+
+The legends explanation for corresponding algorithm are shown as in Table~\ref{tab:lagend}.
+
+\newpage
 \bibliography{myref}
 \bibliographystyle{plain}
 
