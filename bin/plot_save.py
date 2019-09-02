@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from ep import hparam
 
 if (__name__ == '__main__'):
-    usage = "python plot_save.py path/to/figure/date"
+    usage = "python bin/plot_save.py path/to/figure/date"
     
     fig_file = sys.argv[1]
     hparam = hparam()
