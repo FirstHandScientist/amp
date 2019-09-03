@@ -1,5 +1,26 @@
 # Advanced Message Passing Algorithms
 
+## Project tree
+.
+ * [bin](./bin)
+   * [alpha_compare_mmse.py](./bin/alpha_compare_mmse.py)
+   * [alpha_compare.py](./bin/alpha_compare.py)
+   * [ep.py](./bin/ep.py)
+   * [marginal_loopy.py](./bin/marginal_loopy.py)
+   * [plot_save.py](./bin/plot_save.py)
+   * [varying_loopy.py](./bin/varying_loopy.py)
+ * [manuscript](./manuscript)
+ * [README.md](./README.md)
+ * [requirements.txt](./requirements.txt)
+ * [src](./src)
+   * [alphaBP.py](./src/alphaBP.py)
+   * [factorgraph.py](./src/factorgraph.py)
+   * [loopy_modules.py](./src/loopy_modules.py)
+   * [maxsum.py](./src/maxsum.py)
+   * [modules.py](./src/modules.py)
+   * [utils.py](./src/utils.py)
+   * [variationalBP.py](./src/variationalBP.py)
+
 ## Installation
 
 First clone the repository:
