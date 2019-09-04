@@ -20,14 +20,15 @@
 \DeclarePairedDelimiter{\diagfences}{(}{)}
 \newcommand{\diag}{\operatorname{diag}\diagfences}
 \tolerance=1000
-\author{Dong Liu}
+
 
 \usepackage{tikz}
 \usetikzlibrary{calc,shapes,positioning}
 \usetikzlibrary{arrows}
 \newcommand{\midarrow}{\tikz \draw[-triangle 90] (0,0) -- +(.1,0);}
 
-\title{alpha-EP for MIMO}
+\title{Advanced Messaging Passing Algorithms}
+\author{Dong Liu, Lars K. Rasmussen}
 \hypersetup{
   pdfkeywords={},
   pdfsubject={},
@@ -39,7 +40,7 @@
 
 
 \section{Preview}
-A fast preview of content of this manuscript:
+A fast preview of content of this manuscript, where $\checkmark$ denotes showing improvement and $\times$ denotes no sight of improvement:
 \begin{itemize}
 \item[\checkmark] Expectation Propagation (EP)
 \item[\checkmark] PowerEP and alpha-EP
@@ -51,20 +52,15 @@ A fast preview of content of this manuscript:
   \item[\checkmark] First order correction
   \item[$\times$] Do not suggest
   \end{itemize}
-  
 \item[\checkmark] Stochastic EP
   \begin{itemize}
   \item[-] simpler model, similar a bit worse performance than EP
   \end{itemize}
 \item[\checkmark] Expectation Consistency
-  
   \begin{itemize}
   \item[\checkmark] Single Loop
-    \begin{itemize}
-    \item[$?$] Improvement suggestion: full 2-order statistics, to Joao with low investigation priority
-    \end{itemize}
-    
-  \item[$?$] Double Loop
+
+  \item[$-$] Double Loop
     \begin{itemize}
     \item[-] Not really suggest for its complexity
     \end{itemize}
@@ -79,7 +75,7 @@ A fast preview of content of this manuscript:
   \begin{itemize}
   \item[$\times$] Assembling LU decomposition with permutation (Joao)
   \item[$\times$] Assembling multiple GTA approximations (Joao)
-  
+    
     
   \end{itemize}
 \item[\checkmark] Assembling/Boosting, mix-combination (Nima)
@@ -87,40 +83,28 @@ A fast preview of content of this manuscript:
   \item[\checkmark] GTA + EP
   \item[\checkmark] GTA-SIC + EP
   \end{itemize}
-
+\item[\checkmark]$\alpha$-Belief Propagation ($\alpha$-BP)
 \end{itemize}
 
-$\alpha$-BP
 \section{Problem}\label{sec:problem}
-The problem setting is the for observable signal $\bm{y}$, there is a true underlining signal $\bm{x}$ that results in the observation $\bm{y}$. Here $\bm{x}$ is assumed to lie in a discrete finite set, i.e. $\bm{x} \in {\Aa}^{N}$ and we denote its $i$-th element $x_i \in \Aa$. $\bm{y}\in \RR^N$. The further assumption between the relationship between $\bm{y}$ and $\bm{x}$ is linear with Gaussian noise $\bm{w}$, i.e. $\bm{w}\sim \Nn(\bm{0}, \sigma_{w}^2 \bm{I})$. The linear can be formulated as:
+The problem setting is that for observable signal $\bm{y}$, there is a true underlining signal $\bm{x}$ that results in the observation $\bm{y}$. Here $\bm{x}$ is assumed to lie in a discrete finite set, i.e. $\bm{x} \in {\Aa}^{N}$ and we denote its $i$-th element $x_i \in \Aa$. The observation lies in continuous real-valued space $\bm{y}\in \RR^N$. The further assumption about the relationship between $\bm{y}$ and $\bm{x}$ is linear transformation with Gaussian noise $\bm{w}$, i.e. $\bm{w}\sim \Nn(\bm{0}, \sigma_{w}^2 \bm{I})$. This can be formulated as:
 \begin{equation}\label{eq:linear-model}
-  \bm{y} = \bm{H} \bm{x} + \bm{w}.
+  \bm{y} = \bm{H} \bm{x} + \bm{w}, \bm{x} \in {\Aa}^{N}.
 \end{equation}
 The optimal way to estimate $\bm{x}$ is to look for the maximum a posterior (MAP) to
 \begin{equation}
   p(\bm{x}|\bm{y}) \sim \Nn(\bm{y}: \bm{H}\bm{x}, \sigma_{w}^2\bm{I})\delta_{\bm{x}\in \Aa}.
 \end{equation}
-To avoid the complex computation, the original posterior is factorized into
+But the search space can be too large to do MAP estimation as the search space increases exponentially with length of $\bm{x}$, i.e. $N$.
+To avoid the complex computation, approximation methods are usually carried out. Since the original posterior can be factorized into
 \begin{equation}
   p(\bm{x}|\bm{y}) = \prod_i t_i(\bm{x}).
 \end{equation}
-Then, we try solve the problem with an approximated distribution 
+Then, we can formulate a approximated distribution 
 \begin{equation}\label{eq:apx-dist-q}
-  q(\bm{x}) = \prod_i \tilde{t}_i(\bm{x}).
+  q(\bm{x}) = \prod_i \tilde{t}_i(\bm{x}),
 \end{equation}
-
-------------------------
-
-\begin{itemize}
-\item[] Initialize $q(x)$ to optimize.
-\item[] Repeat till convergence:\\
-  For $i$ component in $q$:
-  \begin{align}
-    q^{\backslash i}(x) &= q(x) / \tilde{t}_i(x)\\
-    % q^{new}(x)  &= \argmin_{\tilde{t}_i(x)} D_{\alpha}(t_i(x)q^{\backslash i}(x)\| q(x)) \\
-    \tilde{t}^{new}(x) &= q^{new}(x)/q^{\backslash i}(x)
-  \end{align}
-\end{itemize}    
+and estimate $\bm{x}$ by using $q(\bm{x})$.
 
 \section{Expectation Propagation (EP)} \label{sec:EP}
 For the EP algorithm, we basically follow \cite{cespedes2014mimo} to establish a baseline algorithm.
@@ -128,24 +112,24 @@ In this algorithm, the approximated distribution is assumed to be:
 \begin{equation}\label{eq:q-ep}
   q(\bm{x}) \sim \Nn(\bm{y}: \bm{H}\bm{x}, \sigma_{w}^2\bm{I}) \prod_{i=1}^{N} \exp\left( \gamma_i x_i - \frac{1}{2}\Lambda_i x_i^2 \right),
 \end{equation}
-where $\gamma_i \in \RR$ and $\Lambda_i \in \RR^{+}$ are the parameters to be estimated in EP. It is clear that $q(\bm{x})$ in \eqref{eq:q-ep} belongs to exponential family, Gaussian distribution to be specific:
+where $\gamma_i \in \RR$ and $\Lambda_i \in \RR^{+}$, $\forall i$, are the parameters to be estimated in EP. It is clear that $q(\bm{x})$ in \eqref{eq:q-ep} belongs to exponential family, Gaussian distribution to be specific:
 \begin{equation}
   q(\bm{x}) \sim \Nn\left(\bm{x}:\bm{\mu}, \bm{\Sigma} \right),
 \end{equation}
 where we have its distribution parameter as
 \begin{align}
   \bm{\Sigma} &= \left( \sigma_{w}^2\bm{H}^{T}\bm{H} +  \diag{\bm{\Lambda}} \right)^{-1}, \\
-  \bm{\mu} & = \bm{\Sigma}\left( \sigma_{w}^2\bm{H}^{T}\bm{y} +  \bm{\gamma} \right).
+  \bm{\mu} & = \bm{\Sigma}\left( \sigma_{w}^2\bm{H}^{T}\bm{y} +  \bm{\gamma} \right),
 \end{align}
-where $\diag{\Lambda}$ is a diagnal matrix with $\Lambda_i$ as diagnal elements, $\bm{\gamma}=[\gamma_1, \gamma_2, \cdots, \gamma_N]^{T}$.
+with $\diag{\Lambda}$ being a diagnal matrix of which $\Lambda_i, i=1, 2, \cdots, N$, are diagonal elements, $\bm{\gamma}=[\gamma_1, \gamma_2, \cdots, \gamma_N]^{T}$.
 
-The EP algorithm keeps updating the parameters of $q(\bm{x})$ until it meets the stop criteria, after which the most probable $\bm{x}$ is estimated by using updated $q(\bm{x})$. To be specific, the iterations of EP can be detailed as follows:
+EP algorithm keeps updating the parameters of $q(\bm{x})$ until it meets the stop criteria, after which the most probable $\bm{x}$ is estimated by using updated $q(\bm{x})$. To be specific, the iterations of EP can be detailed as follows:
 \begin{itemize}
-\item Update the marginal distribution of the cavity distribution at iteration $t$:
+\item Update the marginal distribution of the cavity distribution at iteration $l$:
   \begin{equation}
-    q^{(l)\backslash i}(u_i) = \frac{q^{(l)(u_i)}}{\exp\left( \gamma_i^{(l)}u_i - \frac{1}{2}\Lambda_i^{(l)}u_i^2 \right)} ,
+    q^{(l)\backslash i}(u_i) = \frac{q^{(l)}(u_i)}{\exp\left( \gamma_i^{(l)}u_i - \frac{1}{2}\Lambda_i^{(l)}u_i^2 \right)} ,
   \end{equation}
-  which is a Gaussian distribution. Let us denote this distribution as $q^{(l)\backslash i}(u_i) = \Nn\left( u_i: t_i^{(l)}, h_i^{2(l)} \right)$, with
+  which is a Gaussian distribution. Superscript $^{(l)}$ denotes the iteration. Let us denote this distribution as $q^{(l)\backslash i}(u_i) = \Nn\left( u_i: t_i^{(l)}, h_i^{2(l)} \right)$, with
   \begin{align}
     h_i^{2 (l)} &= \frac{\sigma_i^{2 (l)}}{1-\sigma_i^{2 (l)} \Lambda_i^{(l)}}, \\
     t_i^{(l)} &= h_i^{2(l)}\left( \frac{\mu_i^{(l)}}{\sigma_i^{2(l)}} - {\gamma_i^{(l)}} \right).
@@ -158,9 +142,9 @@ The EP algorithm keeps updating the parameters of $q(\bm{x})$ until it meets the
   \end{equation}
 \item Update the statistics parameter $\left( \bm{\gamma}, \bm{\Lambda} \right)$ of $q$, where the marginal distribution:
   \begin{equation}
-    q^{(l+1)\backslash i}(u_i) \sim q^{(l)\backslash i}(u_i) \exp\left\{ \gamma_i^{(l+1)}u_i - \frac{1}{2}\Lambda_i^{(l+1)}u_i^2 \right\},
+    q^{(l+1)\backslash i}(u_i) \sim q^{(l)\backslash i}(u_i) \exp\left\{ \gamma_i^{(l+1)}u_i - \frac{1}{2}\Lambda_i^{(l+1)}u_i^2 \right\}.
   \end{equation}
-  where $q^{(t+1)\backslash i}(u_i)$ is parameterized by $\left(\bm{\gamma}, \bm{\Lambda}\right)$. This pair can be updated by:
+  Here $q^{(t+1)\backslash i}(u_i)$ is parameterized by $\left(\bm{\gamma}, \bm{\Lambda}\right)$. This pair can be updated by:
   \begin{align}
     \Lambda_i^{(l+1)} = \frac{1}{\sigma_{p_i}^{2(l)}} - \frac{1}{h_i^{2(l)}} \\
     \gamma_i^{(l+1)} = \frac{\mu_{p_i}^{(t)}}{\sigma_{p_i}^{2(t)}} - \frac{t_i^{(t)}}{h_i^{2(t)}}.
@@ -168,7 +152,7 @@ The EP algorithm keeps updating the parameters of $q(\bm{x})$ until it meets the
   
 \end{itemize}
 
-When stop criteria is meet, estimation is made by using $q(\bm{x}) \sim \Nn\left(\bm{x}:\bm{\mu}^{\ast}, \bm{\Sigma}^{\ast} \right)$, where
+When stop criteria is met, estimation is made by using $q(\bm{x}) \sim \Nn\left(\bm{x}:\bm{\mu}^{\ast}, \bm{\Sigma}^{\ast} \right)$, where
 \begin{align}
   \bm{\Sigma}^{\ast} &= \left( \sigma_{w}^2\bm{H}^{T}\bm{H} +  \diag{\bm{\Lambda}^{\ast}} \right)^{-1}, \\
   \bm{\mu}^{\ast} & = \bm{\Sigma}^{\ast}\left( \sigma_{w}^2\bm{H}^{T}\bm{y} +  \bm{\gamma}^{\ast} \right)
@@ -213,7 +197,7 @@ By applying the above rules to the problem in Section~\ref{sec:problem}, then
   f_i(x_i) &= [t_i(x_i)]^{1/n} = [\delta_{x_i \in \Aa}]^{1/n} = \delta_{x_i \in \Aa}, \\
   \tilde{f}_{i}(x_i) &= [\tilde{t}_i(x_i)]^{1/n} = \exp\left(\frac{\gamma_i x_i - \frac{1}{2}\Lambda_i x_i^2}{n}\right).
 \end{align}
-Assume $\phi(x_i)$ is the sufficient statistics of variables $x_i$. Solving problem in \eqref{eq:min_kl_eqv} givens
+Assume $\phi(x_i)$ is the sufficient statistics of variables $x_i$. Solving problem in \eqref{eq:min_kl_eqv} gives
 \begin{align}
   \EE_{q^{\backslash \tilde{f}_i}(\bm{x}) \tilde{f}^{\mathrm{new}}_i(x_i)}[\phi(x_i)] = \EE_{q^{\backslash \tilde{f}_i}(\bm{x})f_i(x_i)}[\phi(x_i)],
 \end{align}
@@ -222,7 +206,7 @@ which is equivalent to
   \int_{\bm{x}} q^{\backslash \tilde{f}_i}(x)\tilde{f}^{\mathrm{new}}_i(x_i) \phi(x_i) d\bm{x} &= \int_{\bm{x}} q^{\backslash \tilde{f}_i}(x){f}_i(x_i) \phi(x_i) d\bm{x} \\
                                                                                                &= \int_{\bm{x}} q^{\backslash \tilde{f}_i}(x)\delta_{x_i \in \Aa} \phi(x_i) d\bm{x}.
 \end{align}
-By simplifying the above on marginals:
+Simplifying the above on marginalization gives
 \begin{equation}
   \int_{x_i} q_i^{\backslash\tilde{f}_i}(x_i) \tilde{f}_i^{\mathrm{new}}(x_i) \phi(x_i) = \int_{x_i} \delta_{x_i \in \Aa} q_i^{\backslash \tilde{f}_i}(x_i) \phi(x_i) d x_i,
 \end{equation}
@@ -260,8 +244,10 @@ We summarize the algorithm steps for power EP as follow:
   \end{align}
 \end{itemize}
 
+The detection is similar to EP after power EP iterations.
+
 \section{Improvement on EP}\label{sec:imporveEP}
-In this section, some improvement trick on EP is used following Opper's work in \cite{opper2008impovingEP}. The intuition of improving EP comes from that the partition function of EP approximation should be the as close as possible to the partition of original function. In this section we still follow the same notation for model distribution and approximate distortion as previous sections:
+In this section, some improvement on EP is used following Opper's work in \cite{opper2008imp_ep}. The intuition of improving EP comes from that the partition function of EP approximation should be the as close as possible to the partition of original function. In this section we still follow the same notation for model distribution and approximate distortion as previous sections:
 \begin{align}
   &\mathrm{Model~ distribution:} p(\bm{x}) \sim \Nn(\bm{y}: \bm{H}\bm{x}, \sigma_{w}^2\bm{I})\prod_{i=1}^{N}\delta_{{x_i}\in \Aa} = t_0(\bm{x})\prod_{i=1}^{N}t_i(x_i)\\
   &\mathrm{Approximate:} q(\bm{x}) \sim \Nn(\bm{y}: \bm{H}\bm{x}, \sigma_{w}^2\bm{I}) \prod_{i=1}^{N} \exp\left( \gamma_i x_i - \frac{1}{2}\Lambda_i x_i^2 \right)=t_0(\bm{x})\prod_{i=1}^{N}\tilde{t}_i(x_i)&
@@ -274,9 +260,9 @@ The $i$-th title distribution is as:
 
 The first order correction is to estimate by the following approximation:
 \begin{equation}\label{eq:imp-ep-1order}
-  p(\bm{x}) \sim \sum_{i} \hat{p}_i(\bm{x}) - (N-1) q(\bm{x}),
+  p(\bm{x}) \sim \sum_{i} \hat{p}_i(\bm{x}) - (N-1) q(\bm{x}).
 \end{equation}
-where we need to compute the 1st moment of above for approximation, since that what we need for estimate $\bm{x}$. Then the problem is boiled down to the moment computation:
+We need to compute the 1st moment of above for approximation, since that is what we need for estimate $\bm{x}$. Then the problem is boiled down to the moment computation:
 \begin{align}\label{eq:1st-order-crrt}
   \hat{\mu}_{1EP}=&\int_{x_i}\left[ \sum_{i=1}^{N} \hat{p}_i(x_i) - (N-1)q(x_i) \right]x_i d x_i \nonumber\\
                   &=\left[ \sum_{n=1}^{N} \int_{x_i}\hat{p}_i(x_i) d x_i \right] - (N-1)\int_{x_i}q(x_i) x_i d x_i,
@@ -296,7 +282,7 @@ Then the detection via first order corrected EP is
 \end{equation}
 
 \section{Stochastic EP}\label{sec:stochasticEP}
-In this section, we discuss a another variant of EP, named stochastic EP, which is proposed in []. The algorithm comes with the intuition of updating an approximate distribution in a stochastic way.
+In this section, we discuss an another variant of EP, named stochastic EP, which is proposed in \cite{yingzhen2015stochastic_ep}. The algorithm comes with the intuition of updating an approximate distribution in a stochastic way.
 
 In stochastic EP, all approximate factors of $q(\bm{x})$ share the same parameter $\gamma$, $\Lambda$. In this case, the approximate distribution $q(\bm{x})$ is different from the previous sections. Here $q$ has the form of:
 \begin{equation}
@@ -329,7 +315,7 @@ The algorithm steps are the same as EP but the update functions differ:
 \item Compute the mean $\mu_{p_i}^2$ and variance $\sigma_{p_i}^2$ in the same way as in Section~\ref{sec:EP}.
 \item Update the statistics parameter $\left( {\gamma}, {\Lambda} \right)$ of $q$, in the same way as in Section~\ref{sec:EP}.
 \end{itemize}
-Note above only use one data sample to update per iteration. Since one data sample contain only limited information, it is suggested to do soft update:
+Note above only use one data sample to update per iteration. Since one data sample contain only limited information, it is suggested to do soft update with:
 \begin{equation}
   \tilde{t}^{(l+1)}_i(x_i) \gets [\tilde{t}_i^{(l)}(x_i)]^{1-\epsilon} [\tilde{t}^{(l+1)}_i(x_i)]^{\epsilon}.
 \end{equation}
@@ -341,7 +327,7 @@ Then the final update step in Stochastic EP becomes:
 Here the parameter $\epsilon$ can be chosen to depend on the information that each iteration of stochastic EP uses from dataset. Say $\epsilon  = 1/N$ if each iteration uses one data sample to update, or $\epsilon = \mathrm{batch~size}/N$ in batch fashion.
 
 \section{Expectation Consistency (EC)}\label{sec:ec}
-In this section, we present the expectation consistency (EC) algorithm. EC is originally proposed by Opper in \cite{opper2005ec}, where the approximation is obtained by maintaining partition/normalization function. The application for MIMO is tested in \cite{cespedes2018ecmimo}.
+In this section, we present the expectation consistency (EC) algorithm. EC is originally proposed by Opper in \cite{opper2005ec}, where the approximation is obtained by maintaining partition/normalization function. The application of EC for MIMO is tested in \cite{cespedes2018ecmimo}.
 
 The original distribution is the same as previous sections for EP and its variants, with explicit partition $Z$:
 \begin{equation}
@@ -350,7 +336,7 @@ The original distribution is the same as previous sections for EP and its varian
 In EC, two approximations are maintained to $p(\bm{x})$ equivalently:
 \begin{align}
   f_q(\bm{x}) &= \Nn(\bm{y}: \bm{H}\bm{x}, \sigma^{2}_{w} \bm{I}), \\
-  f_q(\bm{x}) &= \frac{1}{N} \prod_{i=1}^{N} \delta_{x_i \in \Aa}.
+  f_r(\bm{x}) &= \frac{1}{N} \prod_{i=1}^{N} \delta_{x_i \in \Aa}.
 \end{align}
 The three distributions are required to maintained equivalent sufficient statistics:
 \begin{equation}
@@ -364,9 +350,9 @@ Let us denote the parameters corresponding to the above statistics of distributi
 \end{align}
 The distributions corresponding to these parameters are:
 \begin{align}
-  q(\bm{x}) &\sim f_q(\bm{x}) \exp(\bm{\lambda}_q^{T} \phi(\bm{x})) = f_q(\bm{x}) \exp\left( \bm{\gamma}_q^{T}\bm{x} - \frac{\bm{x}^{T}\diag{\bm{\Lambda}_q} \bm{x}}{2} \right) \\
+  q(\bm{x}) &\sim f_q(\bm{x}) \exp(\bm{\lambda}_q^{T} \phi(\bm{x})) = f_q(\bm{x}) \exp\left( \bm{\gamma}_q^{T}\bm{x} - \frac{\bm{x}^{T}\diag{\bm{\Lambda}_q} \bm{x}}{2} \right), \\
   r(\bm{x}) &\sim \exp\left(  \bm{\gamma}_r^{T}\bm{x} - \frac{\bm{x}^{T}\diag{\bm{\Lambda}_r} \bm{x}}{2} \right) \prod_{i=1}^{N} \delta_{x_i\in\Aa}, \\
-  s(\bm{x}) &\sim \exp\left(  \bm{\gamma}_s^{T}\bm{x} - \frac{\bm{x}^{T}\diag{\bm{\Lambda}_s} \bm{x}}{2} \right)
+  s(\bm{x}) &\sim \exp\left(  \bm{\gamma}_s^{T}\bm{x} - \frac{\bm{x}^{T}\diag{\bm{\Lambda}_s} \bm{x}}{2} \right).
 \end{align}
 
 
@@ -415,8 +401,11 @@ where
 With this pre-processing trick, the graph representing problem \eqref{eq:er-linear-model} has less loops that that representing problem \eqref{eq:linear-model}, due to the fact that $\bm{R}$ is sparser than $\bm{H}$.
 
 
-\subsection{Assembling/Boosting}\label{subsec:assemble}
-to be written here...
+\subsection{Ensemble/Boosting}\label{subsec:assemble}
+Ensemble method is a meta learning algorithm in statistics and machine learning \cite{James:2014:ISL:2517747,DBLP:journals/corr/abs-1106-0257,Rokach2010}. The basic idea is to use multiple learning algorithms to obtain better predictive performance than that could be obtained from any of constituent learning algorithm alone.
+Boosting is actually a type of assembling methods, which incrementally builds an ensemble by training each new model to emphasize the gap missed by previous models.
+
+So far, since we have introduced the a verity of estimation methods for the problem defined in Section~\ref{sec:problem}. Therefore, we can use the ensemble framework to obtain ensembled estimation model if any standalone model discussed in previous sections does not has performance fulfilled requirements. We omit the detailed discussion on ensemble/boosting here, and would give specific steps when it is used in our experiments.
 
 \section{$\alpha$ belief propagation}\label{sec:alphabp}
 \subsection{Preliminary}\label{sec:preliminary}
@@ -505,7 +494,8 @@ In this section, we will show why $\alpha$-BP as a message-passing algorithm can
 
 
 
-\subsubsection{Fully Factorized Surrogate}
+\textbf{Fully Factorized Surrogate:}
+
 Now we formulate a surrogate distribution as
 \begin{equation}
   q(\bm{x}) \propto \prod_{{i=1}}^{N} \tilde{f}_i(x_i) \prod_{k\in \Kk} \tilde{t}_k(x_i, x_j), \bm{x} \in \Aa^N
@@ -519,7 +509,7 @@ We use the notation $m_{k\rightarrow i}(x_i)$ to denote the factor as a function
   q_i(x_i) \propto \tilde{f}_i(x_i) \prod_{k\in \text{Pa}[i]} m_{k\rightarrow i}(x_i).
 \end{equation}
 
-\subsubsection{Local $\alpha$-Divergence Minimization}
+\textbf{Local $\alpha$-Divergence Minimization:}
 
 Now, we are going to use the heuristic scheme as in \autoref{eq:fixed-point-iter} to minimize the information loss by using tractable $q(\bm{x})$ to represent $p(\bm{x})$. The information loss is measured by $\alpha$-divergence $\Dd_{\alpha}(p(\bm{x}) \| q(\bm{x}))$.
 
@@ -650,6 +640,8 @@ We summarize the method into the pseudo-code in Algorithm~\autoref{alg:alphaBP}.
 
 In this section, we report numerical results on the $\alpha$-BP. It is well known that performance of BP and its variants deteriorate significantly when loops appear in factor graph. We would like to see if $\alpha$-BP could relief the deterioration brought by loops in inference. Thus we firstly test the performance of $\alpha$-BP for MAP inference in a MRF with $\Aa=\{-1,1\}$ (Ising model), where we adjust how loopy its corresponding factor graph is.
 
+
+
 In addition, we apply the $\alpha$-BP to a MIMO detection problem, to explore its performance in comparison with (loopy) BP and minimum mean square error (MMSE). At the end, the prior factor trick is used according to discussion in Subsection~\ref{subsec:remark}. This turns out to be MAP inference problem as well.
 
 For the MAP inference, the most probable estimation by $\alpha$-BP, $\hat{\bm{x}}=[\hat{x}_1, \cdots, \hat{x}_N]$, is obtained by
@@ -665,9 +657,6 @@ With $t_k(x_i, x_j) = e^{-2J_{i,j}x_i x_j}$ and $f_i(x_i) = e^{-J_{i,i}-b_i x_i}
   p(\bm{x}) \propto \exp\{-\bm{x}^{T}\bm{J}\bm{x} - \bm{b}^{T}\bm{x}\}, \bm{x} \in \Aa^N,
 \end{equation}
 where $\bm{x}^{T}$ is transform of $\bm{x}$, $J_{i,j}$ is element of symmetrix matrix $\bm{J}$ at $i$-th row and $j$-th column, $\bm{b} = [b_1, \cdots, b_N]^T$.
-
-
-For this experiment, we set $\Aa = \left\{ -1, 1 \right\}$ and $N=9$. Bias $\bm{b}$ is sampled from Gaussian, ${b_i} \sim \Nn(0, (1/4)^2)$. Since $\bm{J}$ decides the loopy level of its corresponding factor graph, we use the Erdos-Rényi model \cite{erdos1960} to construct its connectivity. Namely, an element of $\bm{J}$ is set as non-zero, $ {J}_{i,j} = {J}_{j,i} \sim \Nn(0,1)$, with an \textit{Edge Probability}. Otherwise, ${J}_{i, j} = {J}_{j,i} = 0$, which means this is no connection between variable node $x_i$ and $x_j$. For each test value of Edge Probability, $5000$ binary MRF models are generated randomly and mismatch between $\argmax_{\bm{x}} p(\bm{x})$ and $\left\{ \bm{x}|\argmax_{x_i}q_i(x_i) \right\}$ is computed in each realization. The results are shown in \autoref{fig:mismatch}. As the Edge Probability increases, graphs become loopier and $\alpha$-BP (also BP) has more mismatch with MAP inference. In general, $\alpha$-BP with $\alpha > 1$ underperforms BP, and $\alpha$-BP with $\alpha < 1$ outperforms BP. For $\alpha=0.2, 0.4, 0.6$, $\alpha$-BP stops deteriorating for Edge Probability increasing over $0.35$, while BP continues giving even worse approximations.
 
 \begin{figure}[!t]
   \begin{subfigure}{1\textwidth}
@@ -686,6 +675,7 @@ For this experiment, we set $\Aa = \left\{ -1, 1 \right\}$ and $N=9$. Bias $\bm{
     size 4.}
   \label{fig:compare-const4}
 \end{figure}
+
 \begin{figure}[!t]
   \begin{subfigure}{1\textwidth}
     \includegraphics[width=1\linewidth]{figures/ep_experiments_4by4_bpsk_alpha4.eps}
@@ -700,10 +690,16 @@ For this experiment, we set $\Aa = \left\{ -1, 1 \right\}$ and $N=9$. Bias $\bm{
   \caption{Numerical results of discussed algorithms, constellation size 2.}
   \label{fig:compare-const2}
 \end{figure}
+
+
+For this experiment, we set $\Aa = \left\{ -1, 1 \right\}$ and $N=9$. Bias $\bm{b}$ is sampled from Gaussian, ${b_i} \sim \Nn(0, (1/4)^2)$. Since $\bm{J}$ decides the loopy level of its corresponding factor graph, we use the Erdos-Rényi model \cite{erdos1960} to construct its connectivity. Namely, an element of $\bm{J}$ is set as non-zero, $ {J}_{i,j} = {J}_{j,i} \sim \Nn(0,1)$, with an \textit{Edge Probability}. Otherwise, ${J}_{i, j} = {J}_{j,i} = 0$, which means this is no connection between variable node $x_i$ and $x_j$. For each test value of Edge Probability, $5000$ binary MRF models are generated randomly and mismatch between $\argmax_{\bm{x}} p(\bm{x})$ and $\left\{ \bm{x}|\argmax_{x_i}q_i(x_i) \right\}$ is computed in each realization. The results are shown in \autoref{fig:mismatch}. As the Edge Probability increases, graphs become loopier and $\alpha$-BP (also BP) has more mismatch with MAP inference. In general, $\alpha$-BP with $\alpha > 1$ underperforms BP, and $\alpha$-BP with $\alpha < 1$ outperforms BP. For $\alpha=0.2, 0.4, 0.6$, $\alpha$-BP stops deteriorating for Edge Probability increasing over $0.35$, while BP continues giving even worse approximations.
+
+\newpage
+
 \section{Numerical Results}
 
-\begin{table}[!t]
-  \caption{Legend Explanation for Experiment Section}\label{tab:lagend}
+\begin{table}[!h]
+  \caption{Legend Explanation for Experiment Section}\label{tab:legend}
   \centering
   \begin{tabular}{ |p{3cm}||p{8cm}|  }
     \hline
@@ -714,6 +710,7 @@ For this experiment, we set $\Aa = \left\{ -1, 1 \right\}$ and $N=9$. Bias $\bm{
     Power EP & Power Expectation Propagation (Section~\ref{sec:power-ep}) \\
     \hline
     Expansion EP & Expansion Expectation Propagation (The First-order Expansion in Section~\ref{sec:imporveEP}) \\
+    \hline
     Stochastic EP & Stochastic Expectation Propagation (Section~\ref{sec:stochasticEP}) \\
     \hline
     EC & Expectation Consistency (Section~\ref{sec:ec}) \\
@@ -722,6 +719,10 @@ For this experiment, we set $\Aa = \left\{ -1, 1 \right\}$ and $N=9$. Bias $\bm{
     \hline
     $\alpha$-BP$+$MMSE & $\alpha$-BP assembled with MMSE as prior (Section~\ref{subsec:assemble},\ref{subsec:remark}) \\
     \hline
+    $\alpha$-BP$+$EP & $\alpha$-BP assembled with EP as prior (Similar to the $\alpha$-BP$+$MMSE) \\
+    \hline
+    MAP & Maximum a Posterior \\
+    \hline
   \end{tabular}
   \vspace{1cm}
 \end{table}
@@ -729,9 +730,18 @@ For this experiment, we set $\Aa = \left\{ -1, 1 \right\}$ and $N=9$. Bias $\bm{
 
 In this section, we made a comparison between the algorithms discussed in this report. The software written for this set of experiments is implemented in Python. The algorithms implemented includes MMSE, expectation propagation, stochastic expectation propagation, power expectation propagation, expansion expectation propagation (correction of expectation propagation), and some improvement tricks. The maximum a posterior is used shown numerically as a reference bound for all algorithms.
 
-The legends explanation for corresponding algorithm are shown as in Table~\ref{tab:lagend}.
+The legends explanation for corresponding algorithm are shown as in Table~\ref{tab:legend}.
+The quantity comes with $\alpha$-BP is the $\alpha$ value used in experiment for the algorithm of $\alpha$-BP and its ensembles. In Table~\ref{tab:legend}, MAP stands for maximum a posterior, which is the optimal solution for problem \eqref{eq:linear-model}, i.e.
+\begin{equation}
+  \uargmax{\bm{x}}p(\bm{x}|\bm{y}) =\uargmax{\bm{x}} \Nn(\bm{y}: \bm{H}\bm{x}, \sigma_{w}^2\bm{I})\delta_{\bm{x}\in \Aa}.
+\end{equation}
+
+
+
 
 \newpage
+
+
 \bibliography{myref}
 \bibliographystyle{plain}
 
