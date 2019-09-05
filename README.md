@@ -1,4 +1,6 @@
 # Advanced Message Passing Algorithms
+A collection of message passing algorithms. Please read [manuscript](manuscript/amp.pdf) for the detail of algorithms.
+
 
 ## Project tree
 .
