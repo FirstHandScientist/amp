@@ -48,6 +48,8 @@ To run experiment of comparing discussed algorithm in manuscript [amp.pdf](manus
 $ python bin/ep.py
 ```
 You may configure the setting in scrips in [bin](bin) to make experiment configuration.
-[plot_save](bin/plob_save.py) can be used to generate figures by saved experiment results.
+[plot_save](bin/plot_save.py) can be used to generate figures by saved experiment results.
 
 
+## Acknowledge
+Code [factorgraph](src/factorgraph.py) is adapted from [repository](https://github.com/mbforbes/py-factorgraph).
