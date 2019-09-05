@@ -381,10 +381,10 @@ The steps of EC is as follows:
 \end{itemize}
 
 \section{Some Techniques to Gain Detection Performance}
-In this section, we discuss some techniques that should help the detection performance.
+In this section, we discuss some techniques that may be used to help the detection performance.
 
 \subsection{Pre-processing by QR decomposition}
-In previous sections, we discuss the EP algorithm and variants of EP based algorithms, which actually does belief propagation in order to do estimation. It is known that (loopy) belief propagation and its variants have better inference capability on tree-structured graph. The more loopy a graph is, the more degeneration the performance of belief propagation would encounter.
+In previous sections, we discuss the EP algorithm and variants of EP based algorithms, which actually do belief propagation in order to do estimation. It is known that (loopy) belief propagation and its variants have better inference capability on tree-structured graph. The more loopy a graph is, the more degeneration the performance of belief propagation would encounter.
 This inspires us to do some pre-processing for the linear model in \eqref{eq:linear-model}, by QR decomposition. According to QR decomposition, any real square matrix can be decomposed into multiplication of an orthogonal matrix and an triangular matrix. Then let us do the QR decomposition of $\bm{H}$ in \eqref{eq:linear-model}
 \begin{equation}
   \bm{y} = \bm{H}\bm{x} + \bm{w} = \bm{Q} \bm{R} \bm{x} + \bm{w}.
