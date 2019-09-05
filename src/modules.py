@@ -1,3 +1,5 @@
+# Define the estimators use for detection
+
 import numpy as np
 import itertools
 import factorgraph as fg

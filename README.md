@@ -42,8 +42,14 @@ and install the requirement file:
 ``` bash
 $ pip install -r requirements.txt
 ```
+## Run Experiment
+To run experiment of comparing discussed algorithm in manuscript, at different value of SNR, active the pyenv27 first and run
+
+``` bash
+$ python bin/ep.py
+```
 
 # To-do list:
 - [ ] More explanation in readme
-- [ ] boosting subsection in manuscript
+- [x] boosting subsection in manuscript
 - [ ] One round of writing check

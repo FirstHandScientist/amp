@@ -1,3 +1,5 @@
+# object of belief propagation graph for alpha-BP
+
 import code  # code.interact(local=dict(globals(), **locals()))
 import logging
 import signal

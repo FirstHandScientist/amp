@@ -1,4 +1,5 @@
 '''
+Code in this file is adapted from another repository: https://github.com/mbforbes/py-factorgraph
 Implementation of factor graph and (loopy) belief propagation algorithm.
 
 Current approach (order matters):
