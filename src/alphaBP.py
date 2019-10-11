@@ -1,4 +1,8 @@
-# object of belief propagation graph for alpha-BP
+'''
+Graph implementation and message passing/computation on the graph for algorithm alpha-BP
+
+'''
+
 
 import code  # code.interact(local=dict(globals(), **locals()))
 import logging

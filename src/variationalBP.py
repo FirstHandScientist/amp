@@ -1,3 +1,7 @@
+'''
+Graph implementation and message passing on the graph for algorithm VariationalBP
+'''
+
 import code  # code.interact(local=dict(globals(), **locals()))
 import logging
 import signal

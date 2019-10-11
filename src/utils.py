@@ -1,3 +1,7 @@
+'''
+This file provide the utility functions for this project.
+'''
+
 import numpy as np
 
 

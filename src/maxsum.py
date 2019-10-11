@@ -1,3 +1,7 @@
+'''
+Graph implementation and message passing/computation for max-product algorithm.
+'''
+
 import code  # code.interact(local=dict(globals(), **locals()))
 import logging
 import signal

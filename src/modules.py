@@ -1,3 +1,27 @@
+'''
+This file implements the detection algorithms (message passing) used for experiments.
+For the specifics about the algorithms, please see the description in manuscript/amp.pdf.
+See section 1 for problem definition in amp.pdf.
+
+Algorithms implemented:
+-- 1. EP: expectation propagation
+-- 2. PowerEP: power expectation propagation
+-- 3. StochasticEP: stochastic expectation propagation
+-- 4. ExpansionEP: improving expectation propagation
+-- 5. ExpansionPowerEP: improving power expectation propagation
+-- 6. ExpectationConsistency
+-- 7. MMSE
+-- 8. ML: maximum likelihood
+-- 9. LoopyBP: loopy belief propagation
+-- 10. StochasticBP: stochastic belief propagation (not included in amp.pdf)
+-- 11. AlphaBP: alpha belief propagation
+-- 12. PPBP: Pseudo Prior Belief Propagation (not included in amp.pdf)
+-- 13. LoopyMP: loopy max-product algorithm (not included in amp.pdf)
+-- 14. VariationalBP: variational belief propagation (not included in amp.pdf)
+-- 15. MMSEalphaBP: alpha BP using MMSE estation as prior
+-- 16. EPalphaBP: alpha BP using EP estation as prior
+-- 17. MMSEvarBP: VariationalBP using MMSE as prior
+'''
 # Define the estimators use for detection
 
 import numpy as np
@@ -12,6 +36,7 @@ from scipy.stats import multivariate_normal
 
 ######################################################################
 class GaussianDiag:
+    '''utils funtion for likelihood computation of Gaussian'''
     Log2PI = float(np.log(2 * np.pi))
 
     @staticmethod
@@ -29,7 +54,10 @@ class GaussianDiag:
         return likelihood
 
 class EP(object):
-    
+    '''
+    Expectation propagation
+    See section 2 amp.pdf
+    '''
     def __init__(self, noise_var, hparam):
         #### two intermediate parameters needed to update
         self.gamma = np.zeros(hparam.num_tx*2)
@@ -180,7 +208,9 @@ class StochasticEP(EP):
 
 class ExpansionEP(EP):
     """Do the improvement of EP, using the basic expansion: the p(x) is appx as 
-    \sum_n q_n(x) - (N-1) p(x), q_n is the n-th title distribution"""
+    \sum_n q_n(x) - (N-1) p(x), q_n is the n-th title distribution.
+    See section 4 in amp.pdf
+    """
     
     # def __init__(self, noise_var, hparam):
     #     super().__init__(noise_var, hparam)
@@ -196,7 +226,9 @@ class ExpansionEP(EP):
 
 class ExpansionPowerEP(PowerEP):
     """Do the improvement of EP, using the basic expansion: the p(x) is appx as 
-    \sum_n q_n(x) - (N-1) p(x), q_n is the n-th title distribution"""
+    \sum_n q_n(x) - (N-1) p(x), q_n is the n-th title distribution
+    See section 3,4 in amp.pdf
+    """
     
     def __init__(self, noise_var, hparam):
         super().__init__(noise_var, hparam)
@@ -213,7 +245,8 @@ class ExpansionPowerEP(PowerEP):
 
     
 class ExpectationConsistency(object):
-    """The implementation of EC algorithm"""
+    """The implementation of EC algorithm.
+    See section 6 in amp.pdf"""
     vary_small = 1e-6
 
     def __init__(self, noise_var, hparam):
@@ -361,6 +394,7 @@ class MMSE(object):
 
 
 class ML(object):
+    '''Maximum likelihood estimation'''
     def __init__(self, hparam):
         self.hparam = hparam
         self.constellation = hparam.constellation
@@ -383,7 +417,9 @@ class ML(object):
 
 
 class LoopyBP(object):
-
+    '''Loopy belief propagation
+    See section 8.5 amp.pdf
+    '''
     def __init__(self, noise_var, hparam):
         # get the constellation
         self.constellation = hparam.constellation
@@ -438,6 +474,10 @@ class LoopyBP(object):
         return estimated_signal
     
 class AlphaBP(LoopyBP):
+    '''Alpha belief propagation
+    See section 8 in amp.pdf
+    also see https://arxiv.org/abs/1908.08906
+    '''
     def __init__(self, noise_var, hparam):
         self.hparam = hparam
         # get the constellation
@@ -452,6 +492,10 @@ class AlphaBP(LoopyBP):
 
 
 class StochasticBP(AlphaBP):
+    '''
+    stochastic graph belief propagation, proposed and discussed in the project.
+    not presented in amp.pdf
+    '''
     def __init__(self, noise_var, hparam):
         self.hparam = hparam
         # get the constellation
@@ -539,7 +583,11 @@ class StochasticBP(AlphaBP):
     
 
 class PPBP(LoopyBP):
-
+    '''
+    Pseudo prior belief propagation
+    see https://ieeexplore.ieee.org/document/5503198
+    not presented in the amp.pdf
+    '''
     def set_potential(self, h_matrix, observation, noise_var):
         power_ratio = noise_var/self.hparam.signal_var
         s = np.matmul(h_matrix.T, h_matrix)
@@ -568,6 +616,10 @@ class PPBP(LoopyBP):
     
 
 class LoopyMP(LoopyBP):
+    '''
+    Loopy max-product algorithm implementation.
+    not presented in amp.pdf
+    '''
     def __init__(self, noise_var, hparam):
         # get the constellation
         self.constellation = hparam.constellation
@@ -605,6 +657,11 @@ class LoopyMP(LoopyBP):
     
 
 class VariationalBP(LoopyBP):
+    '''
+    variational belief propagation
+    see section 4 in Divergence Measures and Message Passing
+    https://www.microsoft.com/en-us/research/publication/divergence-measures-and-message-passing/?from=http%3A%2F%2Fresearch.microsoft.com%2Fpubs%2F67425%2Ftr-2005-173.pdf
+    Not included in the report'''
     def __init__(self, noise_var, hparam):
         self.hparam = hparam
         # get the constellation
@@ -619,6 +676,10 @@ class VariationalBP(LoopyBP):
 
 
 class MMSEalphaBP(AlphaBP):
+    '''
+    alpha belief propagation using mmse as prior
+    see section 8.5 in amp.pdf
+    '''
     def set_potential(self, h_matrix, observation, noise_var):
         power_ratio = noise_var/self.hparam.signal_var
         s = np.matmul(h_matrix.T, h_matrix)
@@ -652,8 +713,10 @@ class MMSEalphaBP(AlphaBP):
                                   potential=t_ij)
 
 class EPalphaBP(AlphaBP):
-    
-
+    '''
+    alpha belief propagation using EP as prior
+    see section 8.5 in amp.pdf
+    '''
     def __init__(self, noise_var, hparam):
         super(EPalphaBP, self).__init__(noise_var, hparam)
         # set EP as prior
@@ -712,6 +775,9 @@ class EPalphaBP(AlphaBP):
 
     
 class MMSEvarBP(VariationalBP):
+    '''
+    VariationalBP using MMSE as prior
+    Not included in the report'''
     def set_potential(self, h_matrix, observation, noise_var):
         power_ratio = noise_var/self.hparam.signal_var
         s = np.matmul(h_matrix.T, h_matrix)

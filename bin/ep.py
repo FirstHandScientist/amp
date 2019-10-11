@@ -1,3 +1,7 @@
+'''
+Experiments to produce results in Figure 4 in amp.pdf
+'''
+# package dependencies
 import numpy as np
 import multiprocessing as mp
 from tqdm import tqdm
@@ -18,22 +22,26 @@ sys.path.append("./src")
 from modules import GaussianDiag, EP, MMSE, PowerEP, StochasticEP, ExpansionEP, ExpansionPowerEP, ExpectationConsistency, LoopyBP, LoopyMP, PPBP, AlphaBP, MMSEalphaBP, ML, VariationalBP, MMSEvarBP, EPalphaBP, StochasticBP
 from utils import channel_component, sampling_noise, sampling_signal, sampling_H,real2complex
 
-
-# define the progress bar to show the progress
-
-
-# configuration
+# configuration of experiments
 class hparam(object):
+    # vector length of x = num_tx *2, section 1 in amp.pdf
     num_tx = 2
+    # vector length of y = num_rx *2, section 1 in amp.pdf
     num_rx = 2
+    # the finite set A, section 1 in amp.pdf
+    constellation = [int(-2), int(-1), int(1), int(2)]
     soucrce_prior = [0.25, 0.25, 0.25, 0.25]
     signal_var = 1
     snr = np.linspace(1,100, 10)
+    # number of monte carlo simulations per point in the experiment figure
     monte = 30
-    constellation = [int(-2), int(-1), int(1), int(2)]
+    # alpha value used for alpha-BP
     alpha = 0.4
+    # power_n is the coefficient for power EP
     power_n = 2
+    # update dumping parameter for EC algorithm
     EC_beta = 0.2
+    # a dictionary of algorithms to be tested in the experiment
     algos = {"MMSE": {"detector": MMSE, "legend": "MMSE"},
              "ML": {"detector": ML, "legend": "MAP"},
              "PowerEP": {"detector": PowerEP, "legend": "Power EP"},
@@ -47,7 +55,7 @@ class hparam(object):
              
              "EPalphaBP": {"detector": EPalphaBP, "legend": r'$\alpha$-BP+EP,'+' {}'.format(alpha)}
              }
-    
+    # number of iterations for each algorithm
     iter_num = {"EP": 10,
                 "EC": 10,
                 "PowerEP": 10,
@@ -67,10 +75,12 @@ class hparam(object):
         value["ser"] = []
 
 
-#pbar = tqdm(total=len(list(hparam.snr)))
+
 
 def task(snr):
-
+    '''
+    Given the snr value, do the experiment with setting defined in hparam
+    '''
     tmp = dict()
     for name,_ in hparam.algos.items():
         tmp[name] = []
@@ -121,17 +131,7 @@ if (__name__ == '__main__'):
         results.append(result)
 
     pool = mp.Pool(mp.cpu_count())
-    # pool = mp.Pool(hparam.snr.shape[0])
-
-    # RESULTS = Parallel(n_jobs=1, pre_dispatch="all", verbose=11, backend="threading")(map(delayed(worker), list(hparam.snr)))
-    # for snr in list(hparam.snr):
-    #     pool.apply_async(task, args=(snr), callback=collect_result)
-    # task(hparam.snr[1])
     results = pool.map(task, list(hparam.snr))
-
-
-    #results = [r for r in result_objects]
-
     pool.close()
 
 
@@ -155,8 +155,7 @@ if (__name__ == '__main__'):
     # Plot the experiments results
     marker_list = ["o", "<", "+", ">", "v", "1", "2", "3", "8", "*", "h", "d", "D"]
     iter_marker_list = iter(marker_list)
-    # fig = plt.figure(1)
-    # ax = fig.add_subplot(111)
+
     fig, ax = plt.subplots()
     for key, method in hparam.algos.items():
         ax.semilogy(hparam.snr, performance[key],
