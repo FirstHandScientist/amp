@@ -39,52 +39,52 @@
 \tableofcontents
 
 
-\section{Preview}
-A fast preview of content of this manuscript, where $\checkmark$ denotes showing improvement and $\times$ denotes no sight of improvement:
-\begin{itemize}
-\item[\checkmark] Expectation Propagation (EP)
-\item[\checkmark] PowerEP and alpha-EP
-  \begin{itemize}
-  \item[\checkmark] show improvement
-  \end{itemize}
-\item[\checkmark] Improvement/correction trick of EP
-  \begin{itemize}
-  \item[\checkmark] First order correction
-  \item[$\times$] Do not suggest
-  \end{itemize}
-\item[\checkmark] Stochastic EP
-  \begin{itemize}
-  \item[-] simpler model, similar a bit worse performance than EP
-  \end{itemize}
-\item[\checkmark] Expectation Consistency
-  \begin{itemize}
-  \item[\checkmark] Single Loop
+% \section{Preview}
+% A fast preview of content of this manuscript, where $\checkmark$ denotes showing improvement and $\times$ denotes no sight of improvement:
+% \begin{itemize}
+% \item[\checkmark] Expectation Propagation (EP)
+% \item[\checkmark] PowerEP and alpha-EP
+%   \begin{itemize}
+%   \item[\checkmark] show improvement
+%   \end{itemize}
+% \item[\checkmark] Improvement/correction trick of EP
+%   \begin{itemize}
+%   \item[\checkmark] First order correction
+%   \item[$\times$] Do not suggest
+%   \end{itemize}
+% \item[\checkmark] Stochastic EP
+%   \begin{itemize}
+%   \item[-] simpler model, similar a bit worse performance than EP
+%   \end{itemize}
+% \item[\checkmark] Expectation Consistency
+%   \begin{itemize}
+%   \item[\checkmark] Single Loop
 
-  \item[$-$] Double Loop
-    \begin{itemize}
-    \item[-] Not really suggest for its complexity
-    \end{itemize}
+%   \item[$-$] Double Loop
+%     \begin{itemize}
+%     \item[-] Not really suggest for its complexity
+%     \end{itemize}
     
-  \end{itemize}
+%   \end{itemize}
   
   
-\end{itemize}
-\begin{itemize}
-\item[$\times$] LU decomposition (Nima)
-\item[\checkmark] Assembling/Boosting, mono-combination
-  \begin{itemize}
-  \item[$\times$] Assembling LU decomposition with permutation (Joao)
-  \item[$\times$] Assembling multiple GTA approximations (Joao)
+% \end{itemize}
+% \begin{itemize}
+% \item[$\times$] LU decomposition (Nima)
+% \item[\checkmark] Assembling/Boosting, mono-combination
+%   \begin{itemize}
+%   \item[$\times$] Assembling LU decomposition with permutation (Joao)
+%   \item[$\times$] Assembling multiple GTA approximations (Joao)
     
     
-  \end{itemize}
-\item[\checkmark] Assembling/Boosting, mix-combination (Nima)
-  \begin{itemize}
-  \item[\checkmark] GTA + EP
-  \item[\checkmark] GTA-SIC + EP
-  \end{itemize}
-\item[\checkmark]$\alpha$-Belief Propagation ($\alpha$-BP)
-\end{itemize}
+%   \end{itemize}
+% \item[\checkmark] Assembling/Boosting, mix-combination (Nima)
+%   \begin{itemize}
+%   \item[\checkmark] GTA + EP
+%   \item[\checkmark] GTA-SIC + EP
+%   \end{itemize}
+% \item[\checkmark]$\alpha$-Belief Propagation ($\alpha$-BP)
+% \end{itemize}
 
 \section{Problem}\label{sec:problem}
 The problem setting is that for observable signal $\bm{y}$, there is a true underlining signal $\bm{x}$ that results in the observation $\bm{y}$. Here $\bm{x}$ is assumed to lie in a discrete finite set, i.e. $\bm{x} \in {\Aa}^{N}$ and we denote its $i$-th element $x_i \in \Aa$. The observation lies in continuous real-valued space $\bm{y}\in \RR^N$. The further assumption about the relationship between $\bm{y}$ and $\bm{x}$ is linear transformation with Gaussian noise $\bm{w}$, i.e. $\bm{w}\sim \Nn(\bm{0}, \sigma_{w}^2 \bm{I})$. This can be formulated as:
@@ -290,8 +290,8 @@ In stochastic EP, all approximate factors of $q(\bm{x})$ share the same paramete
 \end{equation}
 where
 \begin{align}
-  \bm{\Sigma} &= (\sigma_w^2\bm{H}^T\bm{H} + \Sigma \bm{I})^{-1},\\
-  \bm{\mu} & = \bm{\Sigma} ( \sigma_w^2\bm{H}^T\bm{y} + \gamma \bm{1}),
+  \bm{\Sigma} &= (\sigma_w^{-2}\bm{H}^T\bm{H} + \Sigma \bm{I})^{-1},\\
+  \bm{\mu} & = \bm{\Sigma} ( \sigma_w^{-2}\bm{H}^T\bm{y} + \gamma \bm{1}),
 \end{align}
 in which $\bm{I}$ is unitary matrix and $\bm{1}$ is a vectors with all elements of ones. This setting of models has the following pros and cons:
 \begin{itemize}
