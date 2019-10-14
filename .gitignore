@@ -23,3 +23,6 @@ manuscript/texput.log
 gen_tree.sh
 
 __pycache__
+
+
+bin/marginal_loopy.py
