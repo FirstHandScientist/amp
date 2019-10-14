@@ -1,0 +1,25 @@
+# not tracking pyc
+bin/*.pyc
+src/*.pyc
+
+# figures
+figures/*
+
+# test file
+src/simplegraph.py
+
+manuscript/auto
+manuscript/amp.aux
+manuscript/amp.bbl
+manuscript/amp.blg
+manuscript/amp.log
+manuscript/amp.out
+manuscript/amp.synctex.gz
+manuscript/amp.toc
+manuscript/auto/
+manuscript/mystyle.log
+manuscript/texput.log
+
+gen_tree.sh
+
+__pycache__

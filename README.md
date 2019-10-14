@@ -52,6 +52,9 @@ $ python bin/ep.py
 You may configure the setting in scrips in [bin](bin) to make experiment configuration.
 [plot_save](bin/plot_save.py) can be used to generate figures by saved experiment results.
 
+## ToDo
+Some comments on the files of codes
+
 
 ## Acknowledge
 Code [factorgraph](src/factorgraph.py) is adapted from [repository](https://github.com/mbforbes/py-factorgraph).
