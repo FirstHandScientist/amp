@@ -66,9 +66,6 @@ $ python bin/alpha_compare_mmse.py
 python bin/plot_save.py path/to/figure/date
 ```
 
-## ToDo
-Some comments on the files of codes
-
 
 ## Acknowledge
 Code [factorgraph](src/factorgraph.py) is adapted from [repository](https://github.com/mbforbes/py-factorgraph).
