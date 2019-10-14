@@ -118,8 +118,8 @@ where $\gamma_i \in \RR$ and $\Lambda_i \in \RR^{+}$, $\forall i$, are the param
 \end{equation}
 where we have its distribution parameter as
 \begin{align}
-  \bm{\Sigma} &= \left( \sigma_{w}^2\bm{H}^{T}\bm{H} +  \diag{\bm{\Lambda}} \right)^{-1}, \\
-  \bm{\mu} & = \bm{\Sigma}\left( \sigma_{w}^2\bm{H}^{T}\bm{y} +  \bm{\gamma} \right),
+  \bm{\Sigma} &= \left( \sigma_{w}^{-2}\bm{H}^{T}\bm{H} +  \diag{\bm{\Lambda}} \right)^{-1}, \\
+  \bm{\mu} & = \bm{\Sigma}\left( \sigma_{w}^{-2}\bm{H}^{T}\bm{y} +  \bm{\gamma} \right),
 \end{align}
 with $\diag{\Lambda}$ being a diagnal matrix of which $\Lambda_i, i=1, 2, \cdots, N$, are diagonal elements, $\bm{\gamma}=[\gamma_1, \gamma_2, \cdots, \gamma_N]^{T}$.
 
@@ -154,8 +154,8 @@ EP algorithm keeps updating the parameters of $q(\bm{x})$ until it meets the sto
 
 When stop criteria is met, estimation is made by using $q(\bm{x}) \sim \Nn\left(\bm{x}:\bm{\mu}^{\ast}, \bm{\Sigma}^{\ast} \right)$, where
 \begin{align}
-  \bm{\Sigma}^{\ast} &= \left( \sigma_{w}^2\bm{H}^{T}\bm{H} +  \diag{\bm{\Lambda}^{\ast}} \right)^{-1}, \\
-  \bm{\mu}^{\ast} & = \bm{\Sigma}^{\ast}\left( \sigma_{w}^2\bm{H}^{T}\bm{y} +  \bm{\gamma}^{\ast} \right)
+  \bm{\Sigma}^{\ast} &= \left( \sigma_{w}^{-2}\bm{H}^{T}\bm{H} +  \diag{\bm{\Lambda}^{\ast}} \right)^{-1}, \\
+  \bm{\mu}^{\ast} & = \bm{\Sigma}^{\ast}\left( \sigma_{w}^{-2}\bm{H}^{T}\bm{y} +  \bm{\gamma}^{\ast} \right)
 \end{align}
 are returned by the above EP iterations. The decision is made by:
 \begin{equation}
