@@ -1,5 +1,6 @@
 '''
 Experiments to produce results in Figure 4 in amp.pdf
+The comparison between algorithms EP, EC, Power EP, alpha-BP, mmse, StochasticEP, MAP, Expansion EP, and the priors trick discussed in Section 8.5 of amp.pdf.
 '''
 # package dependencies
 import numpy as np
@@ -17,8 +18,9 @@ import pickle
 from joblib import Parallel, delayed
 from scipy.stats import multivariate_normal
 import sys
-sys.path.append("./src")
 
+# import algorithms
+sys.path.append("./src")
 from modules import GaussianDiag, EP, MMSE, PowerEP, StochasticEP, ExpansionEP, ExpansionPowerEP, ExpectationConsistency, LoopyBP, LoopyMP, PPBP, AlphaBP, MMSEalphaBP, ML, VariationalBP, MMSEvarBP, EPalphaBP, StochasticBP
 from utils import channel_component, sampling_noise, sampling_signal, sampling_H,real2complex
 
@@ -34,7 +36,7 @@ class hparam(object):
     signal_var = 1
     snr = np.linspace(1,100, 10)
     # number of monte carlo simulations per point in the experiment figure
-    monte = 30
+    monte = 3000
     # alpha value used for alpha-BP
     alpha = 0.4
     # power_n is the coefficient for power EP
@@ -166,7 +168,9 @@ if (__name__ == '__main__'):
 
     ax.set(xlabel="ration of signal to noise variance", ylabel="SER")
     ax.grid()
-    fig.savefig("figures/ep_experiments_alpha{}.pdf".format(int(hparam.alpha/0.1)), bbox_extra_artists=(lgd,), bbox_inches='tight')
+    fig.savefig("figures/ep_experiments_alpha{}.pdf".format(int(hparam.alpha/0.1)), 
+                bbox_extra_artists=(lgd,), 
+                bbox_inches='tight')
     #plt.show()
 
         

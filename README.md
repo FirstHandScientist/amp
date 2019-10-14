@@ -49,8 +49,22 @@ To run experiment of comparing discussed algorithm in manuscript [amp.pdf](manus
 ``` bash
 $ python bin/ep.py
 ```
-You may configure the setting in scrips in [bin](bin) to make experiment configuration.
-[plot_save](bin/plot_save.py) can be used to generate figures by saved experiment results.
+to compare the algorithms discussed in [amp.pdf](manuscript/amp.pdf). You may configure the setting in scrips in [bin](bin) to make experiment configuration.
+
+For experiments in Figure 3 in [amp.pdf](manuscript/amp.pdf), run
+
+``` bash
+$ python bin/alpha_compare.py
+```
+``` bash
+$ python bin/alpha_compare_mmse.py
+```
+
+[plot_save](bin/plot_save.py) can be used to generate figures by saved experiment results. 
+
+``` bash
+python bin/plot_save.py path/to/figure/date
+```
 
 ## ToDo
 Some comments on the files of codes

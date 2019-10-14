@@ -1,9 +1,10 @@
+'''This file is used to plot the experiment only by loading experiment results'''
+
 import numpy as np
 import pickle
 import sys
 import matplotlib
 matplotlib.rcParams.update({'font.size': 18})
-
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from ep import hparam
