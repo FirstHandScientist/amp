@@ -49,7 +49,7 @@ pytest-cov==2.5.0
 pytest-xdist==1.16.0
 python-dateutil==2.1
 pytz==2019.2
-PyYAML==5.1
+PyYAML==5.4
 scandir==1.10.0
 scipy==1.2.2
 simplegeneric==0.8.1
