@@ -25,7 +25,7 @@ matplotlib==2.2.4
 mock==1.0.1
 msgpack-python==0.5.6
 msgpack-rpc-python==0.4.1
-numpy==1.12.1
+numpy==1.22.0
 nupic==1.0.5
 nupic.bindings==1.0.6
 ordereddict==1.1
