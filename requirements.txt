@@ -7,7 +7,7 @@ backports-abc==0.5
 backports.functools-lru-cache==1.5
 backports.shutil-get-terminal-size==1.0.0
 ccsm==0.9.12.3
-certifi==2019.6.16
+certifi==2022.12.7
 compizconfig-python==0.9.12.3
 coverage==3.7.1
 cycler==0.10.0
